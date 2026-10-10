@@ -725,7 +725,16 @@ const hitsText = t => hlRe && new RegExp(hlRe.source, 'i').test(t);
 /* ---------- filter logic ---------- */
 const abEls = a => state.effType === 'dmg' ? (a.dmg || []) : state.effType === 'heal' ? (a.heal || []) : [...new Set([...(a.dmg || []), ...(a.heal || [])])];
 const boostOn = () => state.boostTypes.size > 0 || state.boostEls.size > 0;
-const bMatch = b => state.boostTypes.size ? state.boostTypes.has(b.t) && (!state.boostEls.size || b.e.some(e => state.boostEls.has(e))) : b.e.some(e => state.boostEls.has(e));
+// Only elemental bonuses and resistances carry an element; element chips never apply to the other boost types.
+const EB = new Set(['elemental', 'resist']);
+const ebTypes = () => [...state.boostTypes].filter(k => EB.has(k));
+const hasEl = b => b.e.some(e => state.boostEls.has(e));
+const bMatch = b => {
+  const T = state.boostTypes, E = state.boostEls;
+  const byType = T.has(b.t) && (!EB.has(b.t) || !E.size || hasEl(b));
+  const byEl = E.size > 0 && !ebTypes().length && EB.has(b.t) && hasEl(b);
+  return byType || byEl;
+};
 const filt = (s, isAb) => {
   const dmgOn = isAb && state.dmgEls.size > 0, shOn = isAb && state.shape.size > 0, bOn = boostOn(); let m = false;
   if (dmgOn && abEls(s).some(e => state.dmgEls.has(e))) m = true;
@@ -750,12 +759,12 @@ function dmgOk(c) {
 }
 function boostOk(c) {
   if (!boostOn()) return true;
-  const items = [...c.ab, ...c.tal].flatMap(x => x.boost || []), all = state.boostMode === 'all';
-  if (state.boostTypes.size) {
-    const sat = ty => items.some(b => b.t === ty && (!state.boostEls.size || b.e.some(e => state.boostEls.has(e))));
-    const sel = [...state.boostTypes]; return all ? sel.every(sat) : sel.some(sat);
-  }
-  const sat = e => items.some(b => b.e.includes(e)), sel = [...state.boostEls]; return all ? sel.every(sat) : sel.some(sat);
+  const items = [...c.ab, ...c.tal].flatMap(x => x.boost || []), T = state.boostTypes, E = state.boostEls, eb = ebTypes();
+  // one criterion per selected type and one per selected element; "any" needs one of them, "all" needs every one
+  const crit = [];
+  T.forEach(k => crit.push(() => items.some(b => b.t === k && (!EB.has(k) || !E.size || hasEl(b)))));
+  E.forEach(el => crit.push(() => items.some(b => EB.has(b.t) && b.e.includes(el) && (!eb.length || T.has(b.t)))));
+  return state.boostMode === 'all' ? crit.every(f => f()) : crit.some(f => f());
 }
 const RARORDER = Object.fromEntries(RARITIES.map(r => [r.id, r.order]));
 const ELORDER = Object.fromEntries(ELEMENTS.map(e => [e.id, e.order]));
