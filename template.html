@@ -313,6 +313,7 @@ mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 3px; pa
 .thumb .tcap img { width: 18px; height: 18px; }
 .thumb .coin { width: 34px; height: 34px; font-size: .78rem; }
 .thumb .credit { top: auto; bottom: auto; position: absolute; right: auto; left: .5rem; top: 2.1rem; font-size: .6rem; max-width: 80%; text-align: left; }
+.thumb .tcap .credit { position: static; display: block; background: none; backdrop-filter: none; padding: 0; margin: 0 0 .15rem; max-width: none; text-align: left; font-size: .62rem; color: rgba(251, 241, 199, .8); text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
 .thumb .pinmini { position: absolute; z-index: 3; left: .45rem; bottom: auto; top: .45rem; width: 26px; height: 26px; border-radius: 8px; border: 0; background: rgba(29, 32, 33, .6); color: #fbf1c7; font-weight: 800; display: grid; place-items: center; opacity: 0; transition: opacity .15s; }
 .thumb:hover .pinmini, .thumb .pinmini.pinned, .thumb .pinmini:focus-visible { opacity: 1; }
 .thumb .pinmini.pinned { background: var(--gold); color: var(--gold-ink); }
@@ -897,7 +898,8 @@ function renderThumb(c) {
   const card = el('article', 'card thumb e-' + c.element + ' r-' + c.rarity + (hlRe && hitsText(t.name) ? ' hitcard' : ''));
   card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', t.name); card.dataset.num = c.number;
   const art = artBlock(c); art.appendChild(pinButton(c, 'pinmini'));
-  const cap = el('div', 'tcap'); const nb = el('b'); hl(nb, t.name); cap.appendChild(nb);
+  const cap = el('div', 'tcap'); const cr = art.querySelector('.credit'); if (cr) cap.appendChild(cr);
+  const nb = el('b'); hl(nb, t.name); cap.appendChild(nb);
   const sp = el('span'); sp.appendChild(elIcon(c.element, '')); sp.appendChild(document.createTextNode('#' + c.number + ' · ' + c.hp + ' ' + L().hp)); cap.appendChild(sp);
   art.appendChild(cap); card.appendChild(art);
   card.onclick = () => openDrawer(c.number);
