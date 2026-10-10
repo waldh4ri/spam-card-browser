@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPAM Card Browser</title>
+<style>
+/*__FONTS__*/
+/* Layout: sticky command bar · filter sidebar (drawer on mobile) · card grid · detail drawer · squad dock.
+   Palette: night-indigo ground, Spamton gold as the single accent, the six element hues carry everything else. */
+:root {
+  color-scheme: dark;
+  --bg: #0c0a16; --bg-glow1: rgba(122, 76, 255, .16); --bg-glow2: rgba(255, 170, 60, .07);
+  --panel: #161325; --panel-2: #1d1931; --raise: #241f3c; --line: #2c2747; --line-2: #3a3360;
+  --fg: #f1edff; --muted: #a39cc4; --dim: #6f6894;
+  --gold: #ffc94a; --gold-ink: #3a2700; --gold-soft: rgba(255, 201, 74, .14);
+  --mark-bg: rgba(255, 201, 74, .32); --mark-fg: #fff6d6;
+  --shadow: 0 10px 30px -14px rgba(0, 0, 0, .7);
+  --c-fire: #ff9a52; --c-water: #6fd6f0; --c-earth: #d1b08f; --c-nature: #b4d24f; --c-light: #ffe27a; --c-shadow: #c778ff; --c-divine: #c9ccd6;
+  --r-common: #a7a2bb; --r-rare: #4fe6ff; --r-epic: #c06aff; --r-legendary: #ffc756; --r-divine: #f0e9ff;
+  --font-display: "Bricolage Grotesque", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius: 16px; --topbar: 64px; --side: 312px;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  color-scheme: light;
+  --bg: #f4f1fb; --bg-glow1: rgba(122, 76, 255, .10); --bg-glow2: rgba(255, 170, 60, .10);
+  --panel: #ffffff; --panel-2: #f8f6fd; --raise: #efeaf9; --line: #e4def3; --line-2: #d3cbea;
+  --fg: #1a1530; --muted: #5d5680; --dim: #8b84a8;
+  --gold: #a86f00; --gold-ink: #3a2700; --gold-soft: rgba(196, 140, 0, .12);
+  --mark-bg: rgba(255, 196, 0, .38); --mark-fg: #1a1530;
+  --shadow: 0 10px 28px -16px rgba(40, 20, 90, .35);
+  --c-fire: #d4540f; --c-water: #0e7fa8; --c-earth: #8b6b4e; --c-nature: #5a8a12; --c-light: #a87d00; --c-shadow: #8a2be2; --c-divine: #5f6470;
+  --r-common: #7d7894; --r-rare: #0e9bb8; --r-epic: #8b3fd6; --r-legendary: #b07800; --r-divine: #6a5acd; } }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f1fb; --bg-glow1: rgba(122, 76, 255, .10); --bg-glow2: rgba(255, 170, 60, .10);
+  --panel: #ffffff; --panel-2: #f8f6fd; --raise: #efeaf9; --line: #e4def3; --line-2: #d3cbea;
+  --fg: #1a1530; --muted: #5d5680; --dim: #8b84a8;
+  --gold: #a86f00; --gold-ink: #3a2700; --gold-soft: rgba(196, 140, 0, .12);
+  --mark-bg: rgba(255, 196, 0, .38); --mark-fg: #1a1530;
+  --shadow: 0 10px 28px -16px rgba(40, 20, 90, .35);
+  --c-fire: #d4540f; --c-water: #0e7fa8; --c-earth: #8b6b4e; --c-nature: #5a8a12; --c-light: #a87d00; --c-shadow: #8a2be2; --c-divine: #5f6470;
+  --r-common: #7d7894; --r-rare: #0e9bb8; --r-epic: #8b3fd6; --r-legendary: #b07800; --r-divine: #6a5acd; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+html, body { margin: 0; }
+body {
+  background: radial-gradient(1200px 600px at 85% -10%, var(--bg-glow1), transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, var(--bg-glow2), transparent 60%), var(--bg);
+  background-attachment: fixed; color: var(--fg); font: 15px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased; min-height: 100vh;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+img { max-width: 100%; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 30; height: var(--topbar);
+  padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  display: flex; align-items: center; gap: .75rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: .55rem; text-decoration: none; color: inherit; flex: none; }
+.brand img { width: 30px; height: 30px; filter: drop-shadow(0 2px 6px rgba(255, 190, 60, .4)); }
+.brand b { font: 800 1.1rem/1 var(--font-display); letter-spacing: -.01em; }
+.brand small { display: block; font-size: .68rem; color: var(--dim); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+.search { flex: 1; min-width: 0; position: relative; max-width: 640px; }
+.search input {
+  width: 100%; height: 42px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel);
+  padding: 0 4.4rem 0 2.5rem; font-size: .98rem; transition: border-color .15s, box-shadow .15s;
+}
+.search input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px var(--gold-soft); }
+.search svg { position: absolute; left: .8rem; top: 50%; translate: 0 -50%; width: 18px; height: 18px; color: var(--dim); pointer-events: none; }
+.search kbd, .search .clear {
+  position: absolute; right: .55rem; top: 50%; translate: 0 -50%; font: 600 .72rem var(--font-body);
+  border: 1px solid var(--line-2); border-radius: 6px; padding: .1rem .4rem; color: var(--dim); background: var(--panel-2);
+}
+.search .clear { right: 2.4rem; border: 0; background: transparent; font-size: 1.1rem; line-height: 1; padding: .2rem .35rem; }
+.tb-btn, .seg button, .lang button {
+  height: 38px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); padding: 0 .75rem;
+  display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .85rem; white-space: nowrap;
+}
+.tb-btn:hover, .seg button:hover, .lang button:hover { border-color: var(--gold); }
+.tb-btn .badge { background: var(--gold); color: var(--gold-ink); border-radius: 999px; font-size: .7rem; padding: 0 .4rem; min-width: 1.2rem; text-align: center; }
+.tb-btn .badge:empty { display: none; }
+.tb-btn svg { width: 17px; height: 17px; }
+.seg { display: inline-flex; border-radius: 10px; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 10px 0 0 10px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 10px 10px 0; }
+.seg button[aria-pressed=true], .lang button[aria-pressed=true] { background: var(--gold-soft); border-color: var(--gold); color: var(--fg); position: relative; z-index: 1; }
+.lang { display: inline-flex; }
+.lang button { padding: 0 .55rem; border-radius: 0; margin-left: -1px; }
+.lang button:first-child { border-radius: 10px 0 0 10px; margin-left: 0; }
+.lang button:last-child { border-radius: 0 10px 10px 0; }
+select.tb-btn { padding-right: .4rem; }
+.tb-group { display: flex; gap: .5rem; align-items: center; }
+
+/* ---------- layout ---------- */
+.layout { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); align-items: start; }
+body.filters-closed .layout { grid-template-columns: minmax(0, 1fr); }
+body.filters-closed .side { display: none; }
+
+/* ---------- filter sidebar ---------- */
+.side {
+  position: sticky; top: var(--topbar); height: calc(100vh - var(--topbar)); overflow: auto; overscroll-behavior: contain;
+  border-right: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent);
+  padding: 1rem 1rem 6rem; display: flex; flex-direction: column; gap: 1.35rem; scrollbar-width: thin;
+}
+.side-head { display: none; }
+.fsec h3 {
+  margin: 0 0 .6rem; font: 700 .72rem/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; gap: .5rem;
+}
+.fsec h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.flabel { font-size: .78rem; color: var(--muted); font-weight: 600; margin: .7rem 0 .4rem; display: flex; justify-content: space-between; align-items: baseline; }
+.flabel output { color: var(--fg); font-variant-numeric: tabular-nums; }
+.icons { display: flex; flex-wrap: wrap; gap: 5px; }
+.itog {
+  width: 35px; height: 35px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); padding: 4px;
+  display: grid; place-items: center; transition: transform .12s, border-color .12s, background .12s; position: relative;
+}
+.itog img { width: 27px; height: 27px; object-fit: contain; filter: saturate(.55) brightness(.85); transition: filter .15s; }
+.itog:hover img, .itog[aria-pressed=true] img { filter: none; }
+.itog[aria-pressed=true] { border-color: var(--ec, var(--gold)); background: color-mix(in srgb, var(--ec, var(--gold)) 18%, var(--panel)); transform: translateY(-1px); }
+.chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: .35rem; border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px;
+  padding: .28rem .65rem; font-size: .8rem; font-weight: 500; transition: border-color .12s, background .12s;
+}
+.chip img { width: 18px; height: 18px; object-fit: contain; }
+.chip:hover { border-color: var(--line-2); }
+.chip[aria-pressed=true] { border-color: var(--gold); background: var(--gold-soft); font-weight: 600; }
+.chip .n { color: var(--dim); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.toxgrid { display: flex; flex-wrap: wrap; gap: .3rem; max-height: 300px; overflow: auto; padding-right: 2px; scrollbar-width: thin; }
+.toxgrid .chip { border-radius: 10px; padding: .2rem .5rem .2rem .3rem; }
+.toxgrid .chip img { width: 22px; height: 22px; }
+.toxgrid .noicon { width: 22px; height: 22px; border-radius: 6px; background: var(--raise); display: grid; place-items: center; font-size: .7rem; font-weight: 700; color: var(--muted); flex: none; }
+.row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-top: .55rem; }
+.mini-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.mini-seg button { border: 0; background: transparent; padding: .22rem .55rem; font-size: .74rem; font-weight: 600; color: var(--muted); }
+.mini-seg button[aria-pressed=true] { background: var(--gold-soft); color: var(--fg); }
+input[type=range] { width: 100%; accent-color: var(--gold); }
+.checks { display: flex; flex-wrap: wrap; gap: .35rem; }
+.checks label { display: inline-flex; gap: .35rem; align-items: center; font-size: .8rem; border: 1px solid var(--line); border-radius: 999px; padding: .22rem .6rem; background: var(--panel-2); cursor: pointer; }
+.checks input { accent-color: var(--gold); margin: 0; }
+.side-foot { display: none; }
+
+/* ---------- results header ---------- */
+main { min-width: 0; padding: 1.1rem max(16px, 2vw) 0; display: flex; flex-direction: column; min-height: calc(100vh - var(--topbar)); }
+.resbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-bottom: 1rem; min-height: 38px; }
+.count { font: 800 1.6rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.count small { font: 600 .85rem var(--font-body); color: var(--muted); margin-left: .35rem; }
+.pills { display: flex; flex-wrap: wrap; gap: .35rem; flex: 1; min-width: 0; }
+.pill {
+  display: inline-flex; align-items: center; gap: .35rem; background: var(--panel); border: 1px solid var(--line-2); border-radius: 999px;
+  padding: .2rem .3rem .2rem .55rem; font-size: .78rem; font-weight: 600; animation: pop .18s ease-out;
+}
+.pill img { width: 16px; height: 16px; object-fit: contain; }
+.pill .k { color: var(--muted); font-weight: 500; }
+.pill button { border: 0; background: var(--raise); width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; line-height: 1; padding: 0; color: var(--muted); }
+.pill button:hover { color: var(--fg); background: var(--line-2); }
+.linkbtn { border: 0; background: transparent; color: var(--gold); font-weight: 600; font-size: .8rem; padding: .2rem .3rem; }
+.tip { color: var(--dim); font-size: .8rem; }
+@keyframes pop { from { transform: scale(.9); opacity: 0; } }
+
+/* ---------- card grid ---------- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 318px), 1fr)); gap: 1.1rem; align-items: stretch; }
+.grid.gallery { grid-template-columns: repeat(auto-fill, minmax(min(46%, 168px), 1fr)); gap: .9rem; }
+.card {
+  --ec: var(--c-divine); position: relative; border-radius: var(--radius); overflow: hidden; min-width: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ec) 16%, var(--panel)) 0, var(--panel) 260px);
+  border: 1px solid color-mix(in srgb, var(--ec) 30%, var(--line)); box-shadow: var(--shadow);
+  content-visibility: auto; contain-intrinsic-size: 318px 640px; transition: transform .18s ease, box-shadow .18s ease;
+  display: flex; flex-direction: column;
+}
+.card:hover { transform: translateY(-2px); }
+.e-fire { --ec: var(--c-fire); } .e-water { --ec: var(--c-water); } .e-earth { --ec: var(--c-earth); } .e-nature { --ec: var(--c-nature); }
+.e-light { --ec: var(--c-light); } .e-shadow { --ec: var(--c-shadow); } .e-divine { --ec: var(--c-divine); }
+.card.r-rare { box-shadow: 0 0 0 1px color-mix(in srgb, var(--r-rare) 45%, transparent), var(--shadow); }
+.card.r-epic { box-shadow: 0 0 0 1px color-mix(in srgb, var(--r-epic) 60%, transparent), 0 10px 34px -14px color-mix(in srgb, var(--r-epic) 70%, transparent); }
+.card.r-legendary { box-shadow: 0 0 0 1px color-mix(in srgb, var(--r-legendary) 70%, transparent), 0 12px 38px -12px color-mix(in srgb, var(--r-legendary) 60%, transparent); }
+.card.r-divine { box-shadow: 0 0 0 2px transparent, 0 12px 40px -12px rgba(200, 160, 255, .6); border-color: transparent; }
+.card.r-divine::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px; pointer-events: none; z-index: 3;
+  background: conic-gradient(from var(--a, 0deg), #ff9a52, #ffe27a, #b4d24f, #6fd6f0, #c778ff, #ff9a52);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.art { position: relative; flex: none; height: 178px; overflow: hidden; background: var(--raise); }
+.art > img.pic { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; transition: transform .5s ease; }
+.card:hover .art > img.pic { transform: scale(1.04); }
+.art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--ec) 14%, var(--panel)) 0%, transparent 62%); pointer-events: none; }
+.card.r-legendary .art::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 230, 160, .35) 50%, transparent 65%); transform: translateX(-100%);
+}
+.num { position: absolute; z-index: 2; left: .6rem; top: .6rem; font: 700 .72rem var(--font-body); background: rgba(10, 8, 20, .62); color: #fff; padding: .12rem .45rem; border-radius: 999px; backdrop-filter: blur(4px); }
+.coin {
+  position: absolute; z-index: 2; right: .5rem; top: .45rem; width: 44px; height: 44px; display: grid; place-items: center;
+  background: center / contain no-repeat; font: 800 .95rem/1 var(--font-display); color: var(--gold-ink); filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .45));
+}
+.credit { position: absolute; z-index: 2; right: .5rem; bottom: .5rem; font-size: .64rem; color: #fff; background: rgba(10, 8, 20, .58); backdrop-filter: blur(4px); padding: .08rem .4rem; border-radius: 6px; max-width: 60%; text-align: right; }
+.credit a { color: inherit; }
+.titlebar { position: relative; z-index: 2; display: flex; align-items: center; gap: .5rem; padding: 0 .85rem; margin-top: -1.7rem; }
+.titlebar .elico { width: 38px; height: 38px; flex: none; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .5)); }
+.titlebar h2 { flex: 1; min-width: 0; margin: 0; font: 800 1.16rem/1.12 var(--font-display); letter-spacing: -.01em; text-wrap: balance; overflow-wrap: anywhere; padding-top: .9rem; }
+.titlebar .gem { width: 34px; height: 26px; object-fit: contain; flex: none; margin-top: .9rem; }
+.subline { display: flex; flex-wrap: wrap; gap: .3rem .55rem; align-items: center; padding: .3rem .85rem 0; font-size: .76rem; color: var(--muted); }
+.subline .rar { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .68rem; }
+.subline .hp { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+.res { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: .6rem .85rem .2rem; }
+.res div { display: flex; align-items: center; justify-content: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--panel-2); border-radius: 7px; padding: 2px 0; border: 1px solid var(--line); }
+.res div.hi { color: var(--fg); font-weight: 700; border-color: color-mix(in srgb, var(--rc) 60%, var(--line)); background: color-mix(in srgb, var(--rc) 14%, var(--panel-2)); }
+.res div.neg { color: #ff7a7a; }
+.res img { width: 15px; height: 15px; }
+.block { padding: .55rem .85rem .1rem; }
+.block h4 { margin: .35rem 0 .3rem; font: 700 .66rem/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); display: flex; gap: .4rem; align-items: center; }
+.block h4::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+.ab { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: .1rem .55rem; padding: .38rem 0; border-radius: 10px; transition: opacity .15s; }
+.ab + .ab { border-top: 1px dashed var(--line); }
+.cdring {
+  grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--ec) 70%, var(--fg)); display: grid; place-items: center;
+  font: 800 .8rem/1 var(--font-display); margin-top: 1px; color: var(--fg); background: color-mix(in srgb, var(--ec) 14%, transparent);
+}
+.abn { display: flex; flex-wrap: wrap; align-items: center; gap: .15rem .4rem; font-weight: 700; font-size: .9rem; line-height: 1.25; }
+.eff { font-size: .84rem; color: color-mix(in srgb, var(--fg) 86%, var(--muted)); white-space: pre-line; overflow-wrap: anywhere; line-height: 1.42; }
+.stats { font-size: .72rem; color: var(--dim); margin-top: .1rem; }
+.edot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.edot.ring { background: transparent !important; box-shadow: inset 0 0 0 2px currentColor; }
+.btag { font-size: .66rem; font-weight: 600; border: 1px solid var(--line-2); border-radius: 6px; padding: 0 .3rem; color: var(--muted); display: inline-flex; gap: 3px; align-items: center; white-space: nowrap; }
+.btag.on { border-color: var(--gold); color: var(--fg); background: var(--gold-soft); }
+.btag .edot { width: 7px; height: 7px; }
+.tox { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 .55rem; padding: .3rem 0; align-items: start; border-radius: 10px; }
+.tox img, .tox .noicon { width: 28px; height: 28px; object-fit: contain; }
+.tox .noicon { border-radius: 8px; background: var(--raise); }
+.tox b { font-size: .86rem; }
+.tox .eff { font-size: .8rem; }
+.tal { position: relative; padding: .32rem 0 .32rem 1.1rem; border-radius: 10px; }
+.tal::before { content: ""; position: absolute; left: .15rem; top: .62rem; width: 7px; height: 7px; transform: rotate(45deg); border: 2px solid color-mix(in srgb, var(--ec) 80%, var(--fg)); border-radius: 2px; }
+.tal + .tal::after { content: attr(data-or); position: absolute; right: 0; top: -.55rem; font-size: .6rem; font-weight: 700; color: var(--dim); background: var(--panel); padding: 0 .3rem; letter-spacing: .1em; text-transform: uppercase; }
+.tal + .tal { border-top: 1px dashed var(--line); }
+.tal .abn { font-size: .86rem; }
+.tal .eff { font-size: .8rem; }
+.hit { background: linear-gradient(90deg, var(--gold-soft), transparent 80%); box-shadow: inset 3px 0 0 var(--gold); padding-left: .5rem !important; }
+.tal.hit { padding-left: 1.5rem !important; }
+.tal.hit::before { left: .6rem; }
+.dim { opacity: .38; }
+.cfoot { display: flex; align-items: center; gap: .4rem; padding: .7rem .85rem .85rem; flex-wrap: wrap; margin-top: auto; }
+.kws { display: flex; flex-wrap: wrap; gap: .25rem; flex: 1; min-width: 0; }
+.kw { border: 1px solid var(--line); background: transparent; border-radius: 6px; font-size: .7rem; padding: .05rem .4rem; color: var(--muted); }
+.kw:hover { color: var(--fg); border-color: var(--gold); }
+.act { display: flex; gap: .35rem; margin-left: auto; }
+.act button { border: 1px solid var(--line-2); background: var(--panel-2); border-radius: 9px; height: 32px; padding: 0 .65rem; font-size: .78rem; font-weight: 700; display: inline-flex; align-items: center; gap: .3rem; }
+.act button:hover { border-color: var(--gold); }
+.act button.pinned { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+.eltxt { font-weight: 700; color: var(--elc); }
+.t-fire { --elc: var(--c-fire); } .t-water { --elc: var(--c-water); } .t-earth { --elc: var(--c-earth); } .t-nature { --elc: var(--c-nature); }
+.t-light { --elc: var(--c-light); } .t-shadow { --elc: var(--c-shadow); } .t-divine { --elc: var(--c-divine); }
+mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 3px; padding: 0 1px; }
+
+/* gallery tiles */
+.thumb { aspect-ratio: 716 / 1024; cursor: pointer; contain-intrinsic-size: 168px 240px; }
+.thumb .art { height: 100%; flex: 1; }
+.thumb .art > img.pic { object-position: 50% 50%; }
+.thumb .art::after { background: linear-gradient(to top, rgba(8, 6, 18, .92) 0%, rgba(8, 6, 18, .25) 42%, transparent 60%); }
+.thumb .tcap { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; padding: .55rem .6rem .5rem; color: #fff; }
+.thumb .tcap b { display: block; font: 800 .95rem/1.1 var(--font-display); text-shadow: 0 2px 6px rgba(0, 0, 0, .7); }
+.thumb .tcap span { font-size: .68rem; opacity: .85; display: flex; gap: .35rem; align-items: center; margin-top: .2rem; }
+.thumb .tcap img { width: 18px; height: 18px; }
+.thumb .coin { width: 34px; height: 34px; font-size: .78rem; }
+.thumb .credit { top: auto; bottom: auto; position: absolute; right: auto; left: .5rem; top: 2.1rem; font-size: .6rem; max-width: 80%; text-align: left; }
+.thumb .pinmini { position: absolute; z-index: 3; left: .45rem; bottom: auto; top: .45rem; width: 26px; height: 26px; border-radius: 8px; border: 0; background: rgba(10, 8, 20, .6); color: #fff; font-weight: 800; display: grid; place-items: center; opacity: 0; transition: opacity .15s; }
+.thumb:hover .pinmini, .thumb .pinmini.pinned, .thumb .pinmini:focus-visible { opacity: 1; }
+.thumb .pinmini.pinned { background: var(--gold); color: var(--gold-ink); }
+.thumb .num { left: auto; right: 2.6rem; top: .55rem; }
+.thumb.hitcard { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.empty { grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--muted); }
+.empty b { display: block; font: 800 1.4rem var(--font-display); color: var(--fg); margin-bottom: .4rem; }
+
+/* ---------- detail drawer ---------- */
+.drawer { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
+.scrim { position: absolute; inset: 0; background: rgba(6, 4, 14, .55); backdrop-filter: blur(3px); animation: fade .2s ease-out; }
+.dpanel {
+  position: relative; width: min(560px, 100%); height: 100%; background: var(--panel); border-left: 1px solid var(--line-2);
+  display: flex; flex-direction: column; animation: slide .25s cubic-bezier(.2, .8, .2, 1); box-shadow: -20px 0 60px -20px rgba(0, 0, 0, .6);
+}
+.dbar { display: flex; gap: .4rem; align-items: center; padding: .7rem .9rem; border-bottom: 1px solid var(--line); padding-top: max(.7rem, env(safe-area-inset-top)); }
+.dbar .sp { flex: 1; font-size: .78rem; color: var(--dim); font-variant-numeric: tabular-nums; }
+.dbody { overflow: auto; flex: 1; overscroll-behavior: contain; padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+.dbody .card { box-shadow: none; border: 0; border-radius: 0; content-visibility: visible; contain-intrinsic-size: none; }
+.dbody .card:hover { transform: none; }
+.dbody .art { height: 360px; }
+.dbody .art > img.pic { object-position: 50% 30%; }
+.dbody .card:hover .art > img.pic { transform: none; }
+.gloss { display: grid; gap: .45rem; }
+.gloss div { font-size: .8rem; color: var(--muted); }
+.gloss b { color: var(--fg); margin-right: .35rem; }
+.lore { font-style: italic; color: var(--muted); font-size: .86rem; line-height: 1.6; }
+.lore-meta { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-bottom: .35rem; font-weight: 700; }
+.resfull { display: grid; gap: .35rem; }
+.resfull > div { display: grid; grid-template-columns: 20px 5rem 1fr 3rem; align-items: center; gap: .5rem; font-size: .8rem; }
+.resfull img { width: 20px; height: 20px; }
+.resfull .bar { height: 8px; border-radius: 99px; background: var(--raise); overflow: hidden; }
+.resfull .bar i { display: block; height: 100%; border-radius: inherit; background: var(--rc); }
+.resfull .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+@keyframes slide { from { transform: translateX(40px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+
+/* ---------- squad dock ---------- */
+.dock {
+  position: fixed; z-index: 40; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); translate: -50% 0; width: min(980px, calc(100% - 24px));
+  background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid var(--line-2); border-radius: 18px; box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .7);
+  padding: .6rem .7rem; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .7rem; align-items: center; animation: rise .25s ease-out;
+}
+@keyframes rise { from { transform: translateY(20px); opacity: 0; } }
+.dock .dt { font: 800 1rem/1 var(--font-display); white-space: nowrap; }
+.dock .dt small { display: block; font: 600 .7rem var(--font-body); color: var(--dim); margin-top: 3px; }
+.slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; }
+.slot { --ec: var(--line-2); display: flex; align-items: center; gap: .4rem; min-width: 0; height: 44px; border-radius: 12px; border: 1px dashed var(--line-2); padding: 0 .4rem; font-size: .78rem; color: var(--dim); background: transparent; text-align: left; }
+.slot.full { border-style: solid; border-color: color-mix(in srgb, var(--ec) 55%, var(--line)); background: color-mix(in srgb, var(--ec) 12%, var(--panel-2)); color: var(--fg); font-weight: 700; }
+.slot img { width: 28px; height: 28px; flex: none; }
+.slot span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.slot .x { flex: none; border: 0; background: transparent; color: var(--dim); font-size: .95rem; padding: 0 .1rem; }
+.sqsum { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .76rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: .5rem; align-items: center; }
+.sqsum b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.sqsum .ics { display: inline-flex; gap: 2px; vertical-align: middle; }
+.sqsum .ics img { width: 18px; height: 18px; }
+.sqsum .warn { color: var(--gold); font-weight: 600; }
+.dock-act { display: flex; gap: .35rem; }
+.dock-act button { border: 1px solid var(--line-2); background: var(--panel-2); border-radius: 9px; height: 34px; padding: 0 .65rem; font-size: .78rem; font-weight: 700; }
+.dock-act button:hover { border-color: var(--gold); }
+body.has-dock main { padding-bottom: 170px; }
+body.dock-min .dock .slots, body.dock-min .dock .sqsum { display: none; }
+body.dock-min .dock { grid-template-columns: auto auto; width: auto; }
+body.dock-min.has-dock main { padding-bottom: 90px; }
+
+footer { padding: 2.5rem 1rem 1.5rem; color: var(--dim); font-size: .75rem; text-align: center; max-width: 70ch; margin: auto auto 0; line-height: 1.6; align-self: center; }
+footer a { color: var(--gold); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) { .brand small { display: none; } .tb-label { display: none; } }
+@media (max-width: 900px) {
+  :root { --topbar: 104px; }
+  .topbar { flex-wrap: wrap; height: auto; min-height: var(--topbar); padding-block: .55rem; gap: .5rem; }
+  .search { order: 2; flex: 1 1 0; max-width: none; }
+  #filtersBtn { order: 3; }
+  .tb-group { order: 4; flex-basis: 100%; justify-content: flex-start; margin-left: 0; }
+  .layout, body.filters-closed .layout { grid-template-columns: minmax(0, 1fr); }
+  .side, body.filters-closed .side { display: flex; }
+  .side {
+    position: fixed; z-index: 70; top: 0; left: 0; bottom: 0; width: min(380px, 92vw); height: auto; background: var(--panel);
+    transform: translateX(-105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); box-shadow: 20px 0 60px -20px rgba(0, 0, 0, .6);
+    padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 5.5rem;
+  }
+  body.side-open .side { transform: none; }
+  .side-head { display: flex; align-items: center; justify-content: space-between; }
+  .side-head b { font: 800 1.2rem var(--font-display); }
+  .side-foot { display: block; position: fixed; z-index: 71; left: 0; bottom: 0; width: min(380px, 92vw); padding: .75rem 1rem max(.75rem, env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); transform: translateX(-105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+  body.side-open .side-foot { transform: none; }
+  .side-foot button { width: 100%; height: 44px; border-radius: 12px; border: 0; background: var(--gold); color: var(--gold-ink); font-weight: 800; }
+  .side-scrim { position: fixed; inset: 0; z-index: 65; background: rgba(6, 4, 14, .55); }
+  .dock { grid-template-columns: minmax(0, 1fr) auto; }
+  .dock .slots { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) { .brand > span { display: none; } .search kbd { display: none; } .search input { padding-right: 2.2rem; } .search .clear { right: .4rem; } .brand b { font-size: 1rem; } .seg .lbl { display: none; } .dbody .art { height: 300px; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .card.r-legendary:hover .art::before { opacity: 1; transform: translateX(100%); transition: transform 1.1s ease, opacity .2s; }
+  .card.r-divine::before { animation: spin 6s linear infinite; }
+  @keyframes spin { to { --a: 360deg; } }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" aria-label="SPAM Card Browser">
+    <img id="brandCoin" alt="">
+    <span><b>SPAM Card Browser</b><small data-i="tagline">Unofficial card pool explorer</small></span>
+  </a>
+  <button class="tb-btn" id="filtersBtn" aria-controls="side" aria-expanded="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+    <span class="tb-label" data-i="filters">Filters</span><span class="badge" id="fbadge"></span>
+  </button>
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="q" autocomplete="off" spellcheck="false" aria-label="Search">
+    <button class="clear" id="qclear" aria-label="Clear search" hidden>×</button>
+    <kbd>/</kbd>
+  </div>
+  <div class="tb-group">
+    <select class="tb-btn" id="sort" aria-label="Sort">
+      <option value="number" data-i="s_number">#</option><option value="name" data-i="s_name">Name</option><option value="spamton" data-i="s_spamton">Spamtons</option>
+      <option value="hp" data-i="s_hp">HP</option><option value="rarity" data-i="s_rarity">Rarity</option><option value="element" data-i="s_element">Element</option>
+    </select>
+    <div class="seg" role="group" aria-label="View">
+      <button data-view="cards" aria-pressed="true" title="Cards"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg><span class="lbl tb-label" data-i="v_cards">Cards</span></button>
+      <button data-view="gallery" aria-pressed="false" title="Gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lbl tb-label" data-i="v_gallery">Gallery</span></button>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="en" aria-pressed="true" lang="en">EN</button><button data-lang="fr" aria-pressed="false" lang="fr">FR</button>
+    </div>
+    <button class="tb-btn" id="theme" aria-label="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side" id="side" aria-label="Filters">
+    <div class="side-head"><b data-i="filters">Filters</b><button class="linkbtn" id="sideClose" data-i="close">Close</button></div>
+    <section class="fsec">
+      <h3 data-i="secCard">Card</h3>
+      <div class="flabel" data-i="element">Element</div><div class="icons" id="f-el"></div>
+      <div class="flabel" data-i="rarity">Rarity</div><div class="chips" id="f-rar"></div>
+      <div class="flabel"><span data-i="spmin">Spamtons at least</span><output id="spOut"></output></div>
+      <input type="range" id="spmin" min="0" step="1" value="0" aria-label="Spamtons">
+      <div class="flabel"><span data-i="hpmin">HP at least</span><output id="hpOut"></output></div>
+      <input type="range" id="hpmin" min="0" step="50" value="0" aria-label="HP">
+    </section>
+    <section class="fsec">
+      <h3 data-i="secCombat">Damage &amp; healing</h3>
+      <div class="icons" id="f-dmg"></div>
+      <div class="row"><div class="mini-seg" id="f-dmgtype"></div><div class="mini-seg" id="f-dmgmode"></div></div>
+    </section>
+    <section class="fsec">
+      <h3 data-i="secBoost">Boosts</h3>
+      <div class="chips" id="f-boost"></div>
+      <div class="flabel" data-i="boostEl">Boost element</div><div class="icons" id="f-boostel"></div>
+      <div class="row"><div class="mini-seg" id="f-boostmode"></div></div>
+    </section>
+    <section class="fsec">
+      <h3 data-i="secTox">Tox</h3>
+      <div class="toxgrid" id="f-tox"></div>
+      <div class="row"><div class="mini-seg" id="f-toxmode"></div></div>
+    </section>
+    <section class="fsec">
+      <h3 data-i="secScope">Search in</h3>
+      <div class="checks" id="f-scope"></div>
+    </section>
+  </aside>
+  <div class="side-foot"><button id="sideDone"></button></div>
+
+  <main id="main">
+    <div class="resbar">
+      <div class="count" aria-live="polite"><span id="count">0</span><small id="countLbl"></small></div>
+      <div class="pills" id="pills"></div>
+      <span class="tip" id="tip"></span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <footer id="footer"></footer>
+  </main>
+</div>
+
+<div class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-label="Card details">
+  <div class="scrim" data-close></div>
+  <div class="dpanel">
+    <div class="dbar">
+      <button class="tb-btn" id="dPrev" aria-label="Previous card">←</button>
+      <button class="tb-btn" id="dNext" aria-label="Next card">→</button>
+      <span class="sp" id="dPos"></span>
+      <button class="tb-btn" id="dPin"></button>
+      <button class="tb-btn" id="dClose" aria-label="Close">✕</button>
+    </div>
+    <div class="dbody" id="dBody"></div>
+  </div>
+</div>
+
+<div class="dock" id="dock" hidden>
+  <div class="dt"><span data-i="squad">Squad</span> <span id="sqCount"></span><small data-i="squadSub">Team of 4</small></div>
+  <div class="slots" id="slots"></div>
+  <div class="dock-act"><button id="sqCopy" data-i="copy">Copy</button><button id="sqClear" data-i="clear">Clear</button><button id="sqMin" aria-label="Minimize">▾</button></div>
+  <div class="sqsum" id="sqSum"></div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const IMG = 'https://www.spamgame.com/data/';
+const ASSETS = __ASSETS__;
+const I18N = {
+  en: {
+    tagline: 'Unofficial card pool explorer', filters: 'Filters', close: 'Close', ph: 'Search cards, abilities, Tox, talents…',
+    s_number: 'Number', s_name: 'Name', s_spamton: 'Spamtons', s_hp: 'HP', s_rarity: 'Rarity', s_element: 'Element',
+    v_cards: 'Cards', v_gallery: 'Gallery',
+    secCard: 'Card', element: 'Element', rarity: 'Rarity', spmin: 'Spamtons at least', hpmin: 'HP at least', any: 'any',
+    secCombat: 'Damage & healing', secBoost: 'Boosts', boostEl: 'Boost element (bonus & resistance)', secTox: 'Tox', secScope: 'Search in',
+    ty_both: 'Both', ty_dmg: 'Damage', ty_heal: 'Healing', m_any: 'Any', m_all: 'All',
+    sc_name: 'Name', sc_abilities: 'Abilities', sc_talents: 'Talents', sc_skills: 'Tox', sc_keywords: 'Keywords',
+    bt: { elemental: 'Elemental bonus', resist: 'Resistance', crit: 'Critical chance', critpower: 'Critical power', accuracy: 'Accuracy', power: 'Base damage / heal', maxhp: 'Max HP', echo: 'Echo', spamton: 'Spamtons', luck: 'Luck' },
+    cardsLbl: n => n === 1 ? 'card' : 'cards', of: t => 'of ' + t, clearAll: 'Clear all', show: n => 'Show ' + n + ' cards',
+    tip: 'Tip: "quotes" for phrases, -word to exclude, / to search',
+    empty: 'No card matches', emptyHint: 'Remove a filter or try fewer words.',
+    p_card: 'Card', p_dmg: 'Damage', p_heal: 'Healing', p_both: 'Dmg/heal', p_boostEl: 'Boost', p_scope: 'Search scope', p_q: 'Search',
+    abilities: 'Abilities', tox: 'Tox', talents: 'Talents · pick one', or: 'or', keywords: 'Keywords', resist: 'Resistances', lore: 'Lore',
+    cd: 'Cooldown', hp: 'HP', spamTip: 'Spamtons this card generates to buy extra Tox', acc: 'Accuracy', crit: 'Crit', echo: 'Echo', uses: 'Uses',
+    wDmg: 'Damage', wHeal: 'Healing', art: 'Art', details: 'Details', add: 'Squad', added: 'In squad', addLong: 'Add to squad', removeLong: 'Remove from squad',
+    squad: 'Squad', squadSub: 'Team of 4', empty_slot: 'Empty slot', copy: 'Copy', copied: 'Copied!', clear: 'Clear', full: 'Squad is full (4 cards)',
+    sumHP: 'Total HP', sumSp: 'Spamtons', sumEls: 'Elements', sumDmg: 'Damage', sumHeal: 'Healing', sumRamp: 'Bonus', sumTox: 'Tox', need: n => (4 - n) + ' slot' + (4 - n > 1 ? 's' : '') + ' left',
+    pos: (i, n) => i + ' / ' + n,
+    footer: 'Unofficial fan project, not affiliated with Ticroco. “Spam” and its contents belong to their rights holders. Card data, icons and illustrations come from the public <a href="https://www.spamgame.com/spamdex" target="_blank" rel="noopener">SPAMDEX</a> (patch {v}) under its <a href="https://spamgame.com/conditions-donnees-cartes" target="_blank" rel="noopener">non-commercial terms</a>; each illustration is credited to its artist. Not for commercial use.'
+  },
+  fr: {
+    tagline: 'Explorateur de cartes non officiel', filters: 'Filtres', close: 'Fermer', ph: 'Chercher cartes, capacités, Tox, talents…',
+    s_number: 'Numéro', s_name: 'Nom', s_spamton: 'Spamtons', s_hp: 'PV', s_rarity: 'Rareté', s_element: 'Élément',
+    v_cards: 'Cartes', v_gallery: 'Galerie',
+    secCard: 'Carte', element: 'Élément', rarity: 'Rareté', spmin: 'Spamtons minimum', hpmin: 'PV minimum', any: 'tous',
+    secCombat: 'Dégâts et soins', secBoost: 'Boosts', boostEl: 'Élément du boost (bonus et résistance)', secTox: 'Tox', secScope: 'Chercher dans',
+    ty_both: 'Les deux', ty_dmg: 'Dégâts', ty_heal: 'Soins', m_any: 'Au moins un', m_all: 'Tous',
+    sc_name: 'Nom', sc_abilities: 'Capacités', sc_talents: 'Talents', sc_skills: 'Tox', sc_keywords: 'Mots-clés',
+    bt: { elemental: 'Bonus élémentaire', resist: 'Résistance', crit: 'Chance critique', critpower: 'Puissance critique', accuracy: 'Précision', power: 'Dégâts / soins de base', maxhp: 'PV max', echo: 'Écho', spamton: 'Spamtons', luck: 'Chance' },
+    cardsLbl: n => n > 1 ? 'cartes' : 'carte', of: t => 'sur ' + t, clearAll: 'Tout effacer', show: n => 'Voir ' + n + ' cartes',
+    tip: 'Astuce : "guillemets" pour une expression, -mot pour exclure, / pour chercher',
+    empty: 'Aucune carte ne correspond', emptyHint: 'Retirez un filtre ou essayez moins de mots.',
+    p_card: 'Carte', p_dmg: 'Dégâts', p_heal: 'Soins', p_both: 'Dégâts/soins', p_boostEl: 'Boost', p_scope: 'Portée', p_q: 'Recherche',
+    abilities: 'Capacités', tox: 'Tox', talents: 'Talents · un au choix', or: 'ou', keywords: 'Mots-clés', resist: 'Résistances', lore: 'Lore',
+    cd: 'Recharge', hp: 'PV', spamTip: 'Spamtons générés par cette carte pour acheter des Tox', acc: 'Précision', crit: 'Crit', echo: 'Écho', uses: 'Utilisations',
+    wDmg: 'Dégâts', wHeal: 'Soins', art: 'Illustration', details: 'Détails', add: 'Équipe', added: 'Dans l’équipe', addLong: 'Ajouter à l’équipe', removeLong: 'Retirer de l’équipe',
+    squad: 'Équipe', squadSub: 'Équipe de 4', empty_slot: 'Emplacement libre', copy: 'Copier', copied: 'Copié !', clear: 'Vider', full: 'L’équipe est complète (4 cartes)',
+    sumHP: 'PV totaux', sumSp: 'Spamtons', sumEls: 'Éléments', sumDmg: 'Dégâts', sumHeal: 'Soins', sumRamp: 'Bonus', sumTox: 'Tox', need: n => (4 - n) + ' place' + (4 - n > 1 ? 's' : '') + ' libre' + (4 - n > 1 ? 's' : ''),
+    pos: (i, n) => i + ' / ' + n,
+    footer: 'Projet de fan non officiel, sans lien avec Ticroco. « Spam » et ses contenus appartiennent à leurs ayants droit. Données, icônes et illustrations issues du <a href="https://www.spamgame.com/spamdex" target="_blank" rel="noopener">SPAMDEX</a> public (patch {v}) selon ses <a href="https://spamgame.com/conditions-donnees-cartes" target="_blank" rel="noopener">conditions non commerciales</a> ; chaque illustration est créditée à son artiste. Usage commercial interdit.'
+  }
+};
+
+const ELEMENTS = DATA.elements, RARITIES = DATA.rarities;
+const elById = Object.fromEntries(ELEMENTS.map(e => [e.id, e]));
+const rarById = Object.fromEntries(RARITIES.map(r => [r.id, r]));
+const toxById = Object.fromEntries(DATA.toxes.map(t => [t.k, t]));
+const RES = ['fire', 'water', 'earth', 'nature', 'light', 'shadow'];
+const SCOPES = ['name', 'abilities', 'talents', 'skills', 'keywords'];
+const MAXSP = Math.max(...DATA.cards.map(c => c.spamton)), MAXHP = Math.max(...DATA.cards.map(c => c.hp));
+const $ = id => document.getElementById(id);
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+const state = {
+  q: '', els: new Set(), rars: new Set(), spmin: 0, hpmin: 0, sort: 'number', scopes: new Set(SCOPES), lang: 'en',
+  tox: new Set(), toxMode: 'all', dmgEls: new Set(), dmgMode: 'any', effType: 'both',
+  boostTypes: new Set(), boostEls: new Set(), boostMode: 'any', view: 'cards', squad: []
+};
+(() => {
+  const l = store.get('spam-lang'); state.lang = l && I18N[l] ? l : ((navigator.language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en');
+  const v = store.get('spam-view'); if (v === 'gallery' || v === 'cards') state.view = v;
+  try { const sq = JSON.parse(store.get('spam-squad') || '[]'); if (Array.isArray(sq)) state.squad = sq.filter(n => DATA.cards.some(c => c.number === n)).slice(0, 4); } catch (e) {}
+  const th = store.get('spam-theme'); if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th;
+  if (store.get('spam-filters-open') === '0') document.body.classList.add('filters-closed');
+  const dm = store.get('spam-dock-min'); if (dm === '1' || (dm === null && matchMedia('(max-width: 560px)').matches)) document.body.classList.add('dock-min');
+})();
+const L = () => I18N[state.lang];
+const T = c => c.t[state.lang];
+const elName = id => elById[id].name[state.lang], rarName = id => rarById[id].name[state.lang];
+const byNum = Object.fromEntries(DATA.cards.map(c => [c.number, c]));
+
+/* ---------- images ---------- */
+// Embedded images are decoded once into blob URLs, so re-renders don't copy huge data URIs into the DOM.
+const _urls = {};
+function asset(kind, key) {
+  const k = kind + ':' + key; if (k in _urls) return _urls[k];
+  const b64 = (ASSETS[kind] || {})[key]; if (!b64) return (_urls[k] = null);
+  const bin = atob(b64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return (_urls[k] = URL.createObjectURL(new Blob([u8], { type: 'image/webp' })));
+}
+const UI = p => asset('ui', p) || IMG + p;
+function pic(src, fallback, cls, alt) {
+  const i = document.createElement('img'); if (cls) i.className = cls; i.alt = alt || ''; i.loading = 'lazy'; i.decoding = 'async'; i.src = src;
+  i.onerror = () => { if (fallback && !i.dataset.r) { i.dataset.r = 1; i.src = fallback; } else i.style.visibility = 'hidden'; };
+  return i;
+}
+const elIcon = (id, cls) => pic(UI(elById[id].icon), IMG + elById[id].icon, cls === undefined ? 'elico' : cls, elName(id));
+const gemIcon = (id, cls) => pic(UI(rarById[id].gem), IMG + rarById[id].gem, cls === undefined ? 'gem' : cls, rarName(id));
+const toxIcon = (k, cls) => { const t = toxById[k]; if (t && t.icon) return pic(UI(t.icon), IMG + t.icon, cls); const s = document.createElement('span'); s.className = 'noicon'; s.textContent = (t ? t.name[state.lang] : '?').slice(0, 1); return s; };
+const COIN = UI('img/frame/spamton.webp'), COIN_FB = IMG + 'img/frame/spamton.webp';
+$('brandCoin').src = COIN; $('brandCoin').onerror = function () { if (!this.dataset.r) { this.dataset.r = 1; this.src = COIN_FB; } };
+
+/* ---------- search ---------- */
+const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/œ/g, 'oe').replace(/æ/g, 'ae').toLowerCase();
+function idx(c) {
+  const k = state.lang; c._i = c._i || {};
+  if (!c._i[k]) {
+    const t = T(c), j = a => a.map(x => x.name + ' ' + x.effect).join(' \n ');
+    c._i[k] = Object.fromEntries(Object.entries({
+      name: [t.name, elName(c.element), rarName(c.rarity)].join(' '), abilities: j(t.abilities), talents: j(t.talents), skills: j(t.skills),
+      keywords: t.keywords.map(x => x.title + ' ' + x.description).join(' \n ')
+    }).map(([a, b]) => [a, fold(b)]));
+  }
+  return c._i[k];
+}
+function parseQuery(s) {
+  const pos = [], neg = [];
+  (s.match(/-?"[^"]+"|\S+/g) || []).forEach(t => {
+    let n = false; if (t[0] === '-' && t.length > 1) { n = true; t = t.slice(1); }
+    t = t.replace(/^"|"$/g, '').trim(); if (t) (n ? neg : pos).push(t);
+  });
+  return { pos, neg };
+}
+function matches(c, pq) {
+  const ix = idx(c), hay = SCOPES.filter(s => state.scopes.has(s)).map(s => ix[s]).join(' \n ');
+  return pq.pos.every(t => hay.includes(fold(t))) && !pq.neg.some(t => hay.includes(fold(t)));
+}
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const ACC = { a: 'aàâäáãå', e: 'eéèêë', i: 'iîïíì', o: 'oôöóòõ', u: 'uùûüú', c: 'cç', y: 'yÿý', n: 'nñ' };
+const accRe = t => esc(fold(t)).replace(/[aeioucyn]/g, ch => '[' + ACC[ch] + ACC[ch].toUpperCase() + ']');
+let hlRe = null, elRe = null, elMap = {};
+function setElRe() {
+  elMap = {}; ELEMENTS.forEach(e => { elMap[e.name[state.lang]] = e.id; });
+  elRe = new RegExp('(?<![\\p{L}])(' + Object.keys(elMap).map(esc).join('|') + ')(?![\\p{L}])', 'u');
+}
+function hl(parent, text) {
+  if (!hlRe) { parent.appendChild(document.createTextNode(text)); return parent; }
+  text.split(hlRe).forEach((part, i) => {
+    if (i % 2) { const m = document.createElement('mark'); m.textContent = part; parent.appendChild(m); }
+    else if (part) parent.appendChild(document.createTextNode(part));
+  });
+  return parent;
+}
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) hl(e, text); return e; }
+function rich(tag, cls, text) {
+  const e = document.createElement(tag); if (cls) e.className = cls;
+  text.split(elRe).forEach((part, i) => {
+    if (i % 2) { const s = document.createElement('span'); s.className = 'eltxt t-' + elMap[part]; hl(s, part); e.appendChild(s); }
+    else if (part) hl(e, part);
+  });
+  return e;
+}
+const hitsText = t => hlRe && new RegExp(hlRe.source, 'i').test(t);
+
+/* ---------- filter logic ---------- */
+const abEls = a => state.effType === 'dmg' ? (a.dmg || []) : state.effType === 'heal' ? (a.heal || []) : [...new Set([...(a.dmg || []), ...(a.heal || [])])];
+const boostOn = () => state.boostTypes.size > 0 || state.boostEls.size > 0;
+const bMatch = b => state.boostTypes.size ? state.boostTypes.has(b.t) && (!state.boostEls.size || b.e.some(e => state.boostEls.has(e))) : b.e.some(e => state.boostEls.has(e));
+const filt = (s, isAb) => {
+  const dmgOn = isAb && state.dmgEls.size > 0, bOn = boostOn(); let m = false;
+  if (dmgOn && abEls(s).some(e => state.dmgEls.has(e))) m = true;
+  if (bOn && (s.boost || []).some(bMatch)) m = true;
+  return { active: dmgOn || bOn, matched: m };
+};
+function toxOk(c) {
+  if (!state.tox.size) return true;
+  const keys = new Set(c.tox.map(x => x.k)), sel = [...state.tox];
+  return state.toxMode === 'any' ? sel.some(k => keys.has(k)) : sel.every(k => keys.has(k));
+}
+function dmgOk(c) {
+  if (!state.dmgEls.size) return true;
+  const have = new Set(c.ab.flatMap(abEls)), sel = [...state.dmgEls];
+  return state.dmgMode === 'all' ? sel.every(e => have.has(e)) : sel.some(e => have.has(e));
+}
+function boostOk(c) {
+  if (!boostOn()) return true;
+  const items = [...c.ab, ...c.tal].flatMap(x => x.boost || []), all = state.boostMode === 'all';
+  if (state.boostTypes.size) {
+    const sat = ty => items.some(b => b.t === ty && (!state.boostEls.size || b.e.some(e => state.boostEls.has(e))));
+    const sel = [...state.boostTypes]; return all ? sel.every(sat) : sel.some(sat);
+  }
+  const sat = e => items.some(b => b.e.includes(e)), sel = [...state.boostEls]; return all ? sel.every(sat) : sel.some(sat);
+}
+const RARORDER = Object.fromEntries(RARITIES.map(r => [r.id, r.order]));
+const ELORDER = Object.fromEntries(ELEMENTS.map(e => [e.id, e.order]));
+const SORTERS = {
+  number: (a, b) => a.number - b.number,
+  name: (a, b) => T(a).name.localeCompare(T(b).name, state.lang),
+  spamton: (a, b) => b.spamton - a.spamton || a.number - b.number,
+  hp: (a, b) => b.hp - a.hp || a.number - b.number,
+  rarity: (a, b) => RARORDER[b.rarity] - RARORDER[a.rarity] || a.number - b.number,
+  element: (a, b) => ELORDER[a.element] - ELORDER[b.element] || a.number - b.number
+};
+const activeCount = () => state.els.size + state.rars.size + (state.spmin > 0) + (state.hpmin > 0) + state.tox.size + state.dmgEls.size + state.boostTypes.size + state.boostEls.size + (state.scopes.size < SCOPES.length ? 1 : 0);
+
+/* ---------- card rendering ---------- */
+function edot(e, ring, title) { const d = document.createElement('span'); d.className = 'edot' + (ring ? ' ring' : ''); d.style.background = 'var(--c-' + e + ')'; d.style.color = 'var(--c-' + e + ')'; if (title) d.title = title; return d; }
+function boostTags(parent, list) {
+  (list || []).forEach(b => {
+    const s = el('span', 'btag' + (boostOn() && bMatch(b) ? ' on' : ''), L().bt[b.t]);
+    b.e.forEach(e => s.appendChild(edot(e, false, elName(e)))); parent.appendChild(s);
+  });
+}
+const inSquad = c => state.squad.includes(c.number);
+function artBlock(c, big) {
+  const t = T(c), art = el('div', 'art');
+  art.appendChild(pic(asset('art', c.slug) || IMG + c.art, IMG + c.art, 'pic', t.name));
+  art.appendChild(el('span', 'num', '#' + c.number));
+  const coin = el('span', 'coin', String(c.spamton)); coin.style.backgroundImage = 'url("' + COIN + '")'; coin.title = c.spamton + ' Spamtons · ' + L().spamTip; art.appendChild(coin);
+  if (c.artist) {
+    const cr = el('span', 'credit'); cr.appendChild(document.createTextNode(L().art + ': '));
+    if (c.artistLink) { const a = document.createElement('a'); a.href = c.artistLink; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = c.artist; a.onclick = e => e.stopPropagation(); cr.appendChild(a); }
+    else cr.appendChild(document.createTextNode(c.artist));
+    art.appendChild(cr);
+  }
+  return art;
+}
+function header(c) {
+  const t = T(c), frag = document.createDocumentFragment();
+  const tb = el('div', 'titlebar'); tb.appendChild(elIcon(c.element)); const h = el('h2'); hl(h, t.name); tb.appendChild(h); tb.appendChild(gemIcon(c.rarity)); frag.appendChild(tb);
+  const sub = el('div', 'subline');
+  const r = el('span', 'rar', rarName(c.rarity)); r.style.color = 'var(--r-' + c.rarity + ')'; sub.appendChild(r);
+  const e = el('span', 'eltxt t-' + c.element, elName(c.element)); sub.appendChild(e);
+  const hp = el('span'); hp.appendChild(el('span', 'hp', c.hp + ' ' + L().hp)); sub.appendChild(hp);
+  frag.appendChild(sub);
+  const res = el('div', 'res'); res.title = L().resist;
+  RES.forEach(k => { const v = c.res[k], x = el('div', v >= 20 ? 'hi' : v < 0 ? 'neg' : ''); x.style.setProperty('--rc', 'var(--c-' + k + ')'); x.title = elName(k) + ' ' + v + '%'; x.appendChild(elIcon(k, '')); x.appendChild(document.createTextNode(v)); res.appendChild(x); });
+  frag.appendChild(res);
+  return frag;
+}
+function abilityRow(c, a, i, full) {
+  const s = c.ab[i], l = L(), fm = filt(s, true);
+  const row = el('div', 'ab' + (hitsText(a.name + ' ' + a.effect) || fm.matched ? ' hit' : '') + (fm.active && !fm.matched ? ' dim' : ''));
+  const ring = el('span', 'cdring', String(s.cd)); ring.title = l.cd + ' ' + s.cd; row.appendChild(ring);
+  const n = rich('div', 'abn', a.name);
+  (s.dmg || []).forEach(e => n.appendChild(edot(e, false, l.wDmg + ' · ' + elName(e))));
+  (s.heal || []).forEach(e => n.appendChild(edot(e, true, l.wHeal + ' · ' + elName(e))));
+  boostTags(n, s.boost); row.appendChild(n);
+  const body = el('div'); body.appendChild(rich('div', 'eff', a.effect));
+  const st = [];
+  if (s.precision !== 100) st.push(l.acc + ' ' + s.precision + '%');
+  if (s.critChance > 1) st.push(l.crit + ' ' + s.critChance + '% ×' + s.critMultiplier);
+  if (s.echo) st.push(l.echo + ' ' + s.echo + '%');
+  if (s.uses) st.push(l.uses + ' ' + s.uses);
+  if (st.length) body.appendChild(el('div', 'stats', st.join(' · ')));
+  row.appendChild(body);
+  return row;
+}
+function cardBody(c, full) {
+  const t = T(c), l = L(), frag = document.createDocumentFragment();
+  if (t.abilities.length) { const b = el('div', 'block'); b.appendChild(el('h4', null, l.abilities)); t.abilities.forEach((a, i) => b.appendChild(abilityRow(c, a, i, full))); frag.appendChild(b); }
+  if (t.skills.length) {
+    const b = el('div', 'block'); b.appendChild(el('h4', null, l.tox));
+    t.skills.forEach(x => {
+      const r = el('div', 'tox' + (hitsText(x.name + ' ' + x.effect) || state.tox.has(x.k) ? ' hit' : '')); r.appendChild(toxIcon(x.k));
+      const d = el('div'); d.appendChild(rich('b', null, x.name)); if (x.effect) d.appendChild(rich('div', 'eff', x.effect)); r.appendChild(d); b.appendChild(r);
+    });
+    frag.appendChild(b);
+  }
+  if (t.talents.length) {
+    const b = el('div', 'block'); b.appendChild(el('h4', null, l.talents));
+    t.talents.forEach((x, i) => {
+      const m = c.tal[i], fm = filt(m, false);
+      const r = el('div', 'tal' + (hitsText(x.name + ' ' + x.effect) || fm.matched || (m.grants && state.tox.has(m.grants)) ? ' hit' : '') + (fm.active && !fm.matched ? ' dim' : ''));
+      r.dataset.or = l.or;
+      const n = rich('div', 'abn', x.name); boostTags(n, m.boost); r.appendChild(n);
+      r.appendChild(rich('div', 'eff', x.effect)); b.appendChild(r);
+    });
+    frag.appendChild(b);
+  }
+  return frag;
+}
+function pinButton(c, cls) {
+  const b = document.createElement('button'); b.type = 'button';
+  const set = () => { const on = inSquad(c); b.className = (cls || '') + (on ? ' pinned' : ''); b.textContent = cls === 'pinmini' ? (on ? '✓' : '+') : (on ? '✓ ' + L().added : '+ ' + L().add); b.title = on ? L().removeLong : L().addLong; b.setAttribute('aria-pressed', String(on)); };
+  set(); b.onclick = e => { e.stopPropagation(); toggleSquad(c); set(); };
+  return b;
+}
+function renderCard(c) {
+  const t = T(c), l = L();
+  const card = el('article', 'card e-' + c.element + ' r-' + c.rarity); card.dataset.num = c.number;
+  card.appendChild(artBlock(c)); card.appendChild(header(c)); card.appendChild(cardBody(c));
+  const f = el('div', 'cfoot'), kws = el('div', 'kws');
+  t.keywords.forEach(k => { const b = el('button', 'kw', k.title); b.type = 'button'; b.title = k.description; b.dataset.kw = k.title; kws.appendChild(b); });
+  f.appendChild(kws);
+  const act = el('div', 'act'); act.appendChild(pinButton(c));
+  const d = el('button', null, l.details + ' →'); d.type = 'button'; d.onclick = () => openDrawer(c.number); act.appendChild(d);
+  f.appendChild(act); card.appendChild(f);
+  return card;
+}
+function renderThumb(c) {
+  const t = T(c);
+  const card = el('article', 'card thumb e-' + c.element + ' r-' + c.rarity + (hlRe && hitsText(t.name) ? ' hitcard' : ''));
+  card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', t.name); card.dataset.num = c.number;
+  const art = artBlock(c); art.appendChild(pinButton(c, 'pinmini'));
+  const cap = el('div', 'tcap'); const nb = el('b'); hl(nb, t.name); cap.appendChild(nb);
+  const sp = el('span'); sp.appendChild(elIcon(c.element, '')); sp.appendChild(gemIcon(c.rarity, '')); sp.appendChild(document.createTextNode(c.hp + ' ' + L().hp)); cap.appendChild(sp);
+  art.appendChild(cap); card.appendChild(art);
+  card.onclick = () => openDrawer(c.number);
+  card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawer(c.number); } };
+  return card;
+}
+
+/* ---------- detail drawer ---------- */
+let lastList = [], drawerNum = null, lastFocus = null;
+function openDrawer(num) {
+  drawerNum = num; const c = byNum[num], t = T(c), l = L();
+  if ($('drawer').hidden) lastFocus = document.activeElement;
+  const body = $('dBody'); body.textContent = '';
+  const card = el('article', 'card e-' + c.element + ' r-' + c.rarity);
+  card.appendChild(artBlock(c, true)); card.appendChild(header(c)); card.appendChild(cardBody(c, true));
+  const rs = el('div', 'block'); rs.appendChild(el('h4', null, l.resist)); const rf = el('div', 'resfull');
+  RES.forEach(k => {
+    const v = c.res[k], row = el('div'); row.style.setProperty('--rc', 'var(--c-' + k + ')');
+    row.appendChild(elIcon(k, '')); row.appendChild(el('span', null, elName(k)));
+    const bar = el('div', 'bar'), fill = document.createElement('i'); fill.style.width = Math.max(0, Math.min(100, v * 2)) + '%'; bar.appendChild(fill); row.appendChild(bar);
+    row.appendChild(el('span', 'v', v + '%')); rf.appendChild(row);
+  });
+  rs.appendChild(rf); card.appendChild(rs);
+  if (t.keywords.length) {
+    const kb = el('div', 'block'); kb.appendChild(el('h4', null, l.keywords)); const g = el('div', 'gloss');
+    t.keywords.forEach(k => { const d = el('div'); d.appendChild(el('b', null, k.title)); d.appendChild(document.createTextNode(k.description)); g.appendChild(d); });
+    kb.appendChild(g); card.appendChild(kb);
+  }
+  if (t.lore || t.loreMeta) {
+    const lb = el('div', 'block'); lb.appendChild(el('h4', null, l.lore));
+    if (t.loreMeta) { const m = document.createElement('div'); m.className = 'lore-meta'; m.textContent = t.loreMeta; lb.appendChild(m); }
+    if (t.lore) { const p = document.createElement('p'); p.className = 'lore'; p.textContent = t.lore; lb.appendChild(p); }
+    card.appendChild(lb);
+  }
+  body.appendChild(card); body.scrollTop = 0;
+  const i = lastList.findIndex(x => x.number === num);
+  $('dPos').textContent = i >= 0 ? l.pos(i + 1, lastList.length) : '';
+  $('dPrev').disabled = i <= 0; $('dNext').disabled = i < 0 || i >= lastList.length - 1;
+  const pb = $('dPin'), on = inSquad(c); pb.textContent = on ? '✓ ' + l.added : '+ ' + l.addLong; pb.classList.toggle('pinned', on);
+  pb.style.background = on ? 'var(--gold)' : ''; pb.style.color = on ? 'var(--gold-ink)' : '';
+  $('drawer').hidden = false; document.body.style.overflow = 'hidden';
+  $('dClose').focus({ preventScroll: true });
+}
+function closeDrawer() { $('drawer').hidden = true; document.body.style.overflow = ''; drawerNum = null; if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true }); }
+function stepDrawer(d) { const i = lastList.findIndex(x => x.number === drawerNum), j = i + d; if (i >= 0 && j >= 0 && j < lastList.length) openDrawer(lastList[j].number); }
+$('dPrev').onclick = () => stepDrawer(-1); $('dNext').onclick = () => stepDrawer(1); $('dClose').onclick = closeDrawer;
+$('drawer').addEventListener('click', e => { if (e.target.dataset.close != null) closeDrawer(); });
+$('dPin').onclick = () => { toggleSquad(byNum[drawerNum]); openDrawer(drawerNum); };
+
+/* ---------- squad ---------- */
+function toggleSquad(c) {
+  const i = state.squad.indexOf(c.number);
+  if (i >= 0) state.squad.splice(i, 1);
+  else if (state.squad.length >= 4) { flashTip(L().full); return; }
+  else state.squad.push(c.number);
+  store.set('spam-squad', JSON.stringify(state.squad)); renderSquad(); syncPins();
+}
+function syncPins() {
+  document.querySelectorAll('#grid .card').forEach(card => {
+    const c = byNum[card.dataset.num]; if (!c) return;
+    const b = card.querySelector('.act button, .pinmini'); if (!b) return;
+    const on = inSquad(c), mini = b.classList.contains('pinmini');
+    b.className = (mini ? 'pinmini' : '') + (on ? ' pinned' : ''); b.textContent = mini ? (on ? '✓' : '+') : (on ? '✓ ' + L().added : '+ ' + L().add); b.title = on ? L().removeLong : L().addLong; b.setAttribute('aria-pressed', String(on));
+  });
+}
+let tipTimer;
+function flashTip(msg) { const t = $('tip'); t.textContent = msg; t.style.color = 'var(--gold)'; clearTimeout(tipTimer); tipTimer = setTimeout(() => { t.style.color = ''; t.textContent = L().tip; }, 2500); }
+function renderSquad() {
+  const l = L(), cards = state.squad.map(n => byNum[n]).filter(Boolean);
+  $('dock').hidden = !cards.length; document.body.classList.toggle('has-dock', cards.length > 0);
+  $('sqCount').textContent = cards.length + '/4';
+  const slots = $('slots'); slots.textContent = '';
+  for (let i = 0; i < 4; i++) {
+    const c = cards[i], s = document.createElement(c ? 'div' : 'div');
+    if (c) {
+      s.className = 'slot full e-' + c.element; s.style.setProperty('--ec', 'var(--c-' + c.element + ')');
+      const open = document.createElement('button'); open.type = 'button'; open.style.cssText = 'all:unset;display:flex;align-items:center;gap:.4rem;min-width:0;flex:1;cursor:pointer';
+      open.appendChild(elIcon(c.element, '')); const nm = document.createElement('span'); nm.textContent = T(c).name; open.appendChild(nm);
+      open.onclick = () => openDrawer(c.number); s.appendChild(open);
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '✕'; x.title = l.removeLong; x.onclick = () => toggleSquad(c); s.appendChild(x);
+    } else { s.className = 'slot'; s.textContent = l.empty_slot; }
+    slots.appendChild(s);
+  }
+  const sum = $('sqSum'); sum.textContent = '';
+  if (!cards.length) return;
+  const add = (label, node) => { const w = document.createElement('span'); w.appendChild(document.createTextNode(label + ' ')); w.appendChild(node); sum.appendChild(w); };
+  const b = v => { const x = document.createElement('b'); x.textContent = v; return x; };
+  const icons = ids => { const w = document.createElement('span'); w.className = 'ics'; if (!ids.length) w.textContent = '—'; ids.forEach(e => w.appendChild(elIcon(e, ''))); return w; };
+  const uniq = arr => ELEMENTS.map(e => e.id).filter(id => arr.includes(id));
+  add(l.sumHP, b(cards.reduce((a, c) => a + c.hp, 0).toLocaleString(state.lang)));
+  add(l.sumSp, b(cards.reduce((a, c) => a + c.spamton, 0)));
+  add(l.sumEls, icons(uniq(cards.map(c => c.element))));
+  add(l.sumDmg, icons(uniq(cards.flatMap(c => c.ab.flatMap(a => a.dmg || [])))));
+  add(l.sumHeal, icons(uniq(cards.flatMap(c => c.ab.flatMap(a => a.heal || [])))));
+  add(l.sumRamp, icons(uniq(cards.flatMap(c => [...c.ab, ...c.tal].flatMap(x => (x.boost || []).filter(bb => bb.t === 'elemental').flatMap(bb => bb.e))))));
+  add(l.sumTox, b(new Set(cards.flatMap(c => c.tox.filter(x => !x.via).map(x => x.k))).size));
+  if (cards.length < 4) { const w = document.createElement('span'); w.className = 'warn'; w.textContent = l.need(cards.length); sum.appendChild(w); }
+}
+$('sqClear').onclick = () => { state.squad = []; store.set('spam-squad', '[]'); renderSquad(); syncPins(); };
+$('sqMin').onclick = () => { const m = document.body.classList.toggle('dock-min'); store.set('spam-dock-min', m ? '1' : '0'); $('sqMin').textContent = m ? '▴' : '▾'; };
+$('sqCopy').onclick = () => {
+  const txt = state.squad.map(n => byNum[n]).filter(Boolean).map(c => T(c).name + ' (' + elName(c.element) + ', ' + rarName(c.rarity) + ')').join('\n');
+  const done = () => { const b = $('sqCopy'); b.textContent = L().copied; setTimeout(() => { b.textContent = L().copy; }, 1500); };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} ta.remove(); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+};
+
+/* ---------- filter sidebar ---------- */
+function toggleBtn(set, id, onChange) {
+  return () => { set.has(id) ? set.delete(id) : set.add(id); onChange(); update(); };
+}
+function iconToggles(box, set, withRing) {
+  box.textContent = '';
+  ELEMENTS.forEach(e => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'itog'; b.style.setProperty('--ec', 'var(--c-' + e.id + ')');
+    b.title = elName(e.id); b.setAttribute('aria-label', elName(e.id)); b.setAttribute('aria-pressed', String(set.has(e.id)));
+    b.appendChild(elIcon(e.id, ''));
+    b.onclick = toggleBtn(set, e.id, () => b.setAttribute('aria-pressed', String(set.has(e.id))));
+    box.appendChild(b);
+  });
+}
+function miniSeg(box, opts, get, setv) {
+  box.textContent = '';
+  opts.forEach(([v, label]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('aria-pressed', String(get() === v));
+    b.onclick = () => { setv(v); box.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(opts[i][0] === v))); update(); };
+    box.appendChild(b);
+  });
+}
+function buildFilters() {
+  const l = L();
+  iconToggles($('f-el'), state.els);
+  const rar = $('f-rar'); rar.textContent = '';
+  RARITIES.forEach(r => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('aria-pressed', String(state.rars.has(r.id)));
+    b.appendChild(gemIcon(r.id, '')); b.appendChild(document.createTextNode(rarName(r.id)));
+    b.onclick = toggleBtn(state.rars, r.id, () => b.setAttribute('aria-pressed', String(state.rars.has(r.id)))); rar.appendChild(b);
+  });
+  const sp = $('spmin'); sp.max = MAXSP; sp.value = state.spmin; const hp = $('hpmin'); hp.max = Math.ceil(MAXHP / 50) * 50; hp.value = state.hpmin;
+  $('spOut').textContent = state.spmin ? '≥ ' + state.spmin : l.any; $('hpOut').textContent = state.hpmin ? '≥ ' + state.hpmin : l.any;
+  iconToggles($('f-dmg'), state.dmgEls);
+  miniSeg($('f-dmgtype'), [['both', l.ty_both], ['dmg', l.ty_dmg], ['heal', l.ty_heal]], () => state.effType, v => { state.effType = v; });
+  miniSeg($('f-dmgmode'), [['any', l.m_any], ['all', l.m_all]], () => state.dmgMode, v => { state.dmgMode = v; });
+  const bt = $('f-boost'); bt.textContent = '';
+  Object.keys(l.bt).forEach(k => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = l.bt[k]; b.setAttribute('aria-pressed', String(state.boostTypes.has(k)));
+    b.onclick = toggleBtn(state.boostTypes, k, () => b.setAttribute('aria-pressed', String(state.boostTypes.has(k)))); bt.appendChild(b);
+  });
+  iconToggles($('f-boostel'), state.boostEls);
+  miniSeg($('f-boostmode'), [['any', l.m_any], ['all', l.m_all]], () => state.boostMode, v => { state.boostMode = v; });
+  const tx = $('f-tox'); tx.textContent = '';
+  DATA.toxes.slice().sort((a, b) => a.name[state.lang].localeCompare(b.name[state.lang], state.lang)).forEach(t => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('aria-pressed', String(state.tox.has(t.k)));
+    b.title = (t.desc && t.desc[state.lang]) || t.name[state.lang];
+    b.appendChild(toxIcon(t.k, '')); const nm = document.createElement('span'); nm.textContent = t.name[state.lang]; b.appendChild(nm);
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = t.count; b.appendChild(n);
+    b.onclick = toggleBtn(state.tox, t.k, () => b.setAttribute('aria-pressed', String(state.tox.has(t.k)))); tx.appendChild(b);
+  });
+  miniSeg($('f-toxmode'), [['all', l.m_all], ['any', l.m_any]], () => state.toxMode, v => { state.toxMode = v; });
+  const sc = $('f-scope'); sc.textContent = '';
+  SCOPES.forEach(s => {
+    const lab = document.createElement('label'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = state.scopes.has(s);
+    cb.onchange = () => { cb.checked ? state.scopes.add(s) : state.scopes.delete(s); update(); };
+    lab.appendChild(cb); lab.appendChild(document.createTextNode(l['sc_' + s])); sc.appendChild(lab);
+  });
+}
+let raf = 0;
+const later = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); };
+$('spmin').oninput = e => { state.spmin = +e.target.value; $('spOut').textContent = state.spmin ? '≥ ' + state.spmin : L().any; later(); };
+$('hpmin').oninput = e => { state.hpmin = +e.target.value; $('hpOut').textContent = state.hpmin ? '≥ ' + state.hpmin : L().any; later(); };
+
+/* ---------- active filter pills ---------- */
+function renderPills() {
+  const l = L(), box = $('pills'); box.textContent = '';
+  const pill = (key, label, icon, remove) => {
+    const p = document.createElement('span'); p.className = 'pill'; if (icon) p.appendChild(icon);
+    if (key) { const k = document.createElement('span'); k.className = 'k'; k.textContent = key; p.appendChild(k); } p.appendChild(document.createTextNode(label));
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + label);
+    x.onclick = () => { remove(); buildFilters(); update(); }; p.appendChild(x); box.appendChild(p);
+  };
+  if (state.q.trim()) pill(l.p_q, '“' + state.q.trim() + '”', null, () => { state.q = ''; $('q').value = ''; });
+  state.els.forEach(e => pill(l.p_card, elName(e), elIcon(e, ''), () => state.els.delete(e)));
+  state.rars.forEach(r => pill(null, rarName(r), gemIcon(r, ''), () => state.rars.delete(r)));
+  if (state.spmin) pill(null, 'Spamtons ≥ ' + state.spmin, null, () => { state.spmin = 0; });
+  if (state.hpmin) pill(null, l.hp + ' ≥ ' + state.hpmin, null, () => { state.hpmin = 0; });
+  const dk = state.effType === 'dmg' ? l.p_dmg : state.effType === 'heal' ? l.p_heal : l.p_both;
+  state.dmgEls.forEach(e => pill(dk, elName(e), elIcon(e, ''), () => state.dmgEls.delete(e)));
+  state.boostTypes.forEach(b => pill(null, l.bt[b], null, () => state.boostTypes.delete(b)));
+  state.boostEls.forEach(e => pill(l.p_boostEl, elName(e), elIcon(e, ''), () => state.boostEls.delete(e)));
+  state.tox.forEach(k => pill(null, toxById[k].name[state.lang], toxIcon(k, ''), () => state.tox.delete(k)));
+  if (state.scopes.size < SCOPES.length) pill(l.p_scope, SCOPES.filter(s => state.scopes.has(s)).map(s => l['sc_' + s]).join(', ') || '—', null, () => { state.scopes = new Set(SCOPES); });
+  if (box.children.length > 1) { const c = el('button', 'linkbtn', l.clearAll); c.type = 'button'; c.onclick = resetAll; box.appendChild(c); }
+  $('tip').hidden = box.children.length > 0;
+}
+function resetAll() {
+  Object.assign(state, { q: '', spmin: 0, hpmin: 0, toxMode: 'all', dmgMode: 'any', effType: 'both', boostMode: 'any', scopes: new Set(SCOPES) });
+  ['els', 'rars', 'tox', 'dmgEls', 'boostTypes', 'boostEls'].forEach(k => state[k].clear());
+  $('q').value = ''; buildFilters(); update();
+}
+
+/* ---------- main update ---------- */
+function update() {
+  const pq = parseQuery(state.q), l = L();
+  hlRe = pq.pos.length ? new RegExp('(' + pq.pos.map(accRe).join('|') + ')', 'gi') : null;
+  const list = DATA.cards.filter(c =>
+    (!state.els.size || state.els.has(c.element)) && (!state.rars.size || state.rars.has(c.rarity)) &&
+    c.spamton >= state.spmin && c.hp >= state.hpmin && toxOk(c) && dmgOk(c) && boostOk(c) && matches(c, pq)
+  ).sort(SORTERS[state.sort]);
+  lastList = list;
+  $('count').textContent = list.length; $('countLbl').textContent = l.cardsLbl(list.length) + ' ' + l.of(DATA.cards.length);
+  const n = activeCount(); $('fbadge').textContent = n || ''; $('sideDone').textContent = l.show(list.length);
+  $('qclear').hidden = !state.q;
+  renderPills();
+  const g = $('grid'); g.className = 'grid' + (state.view === 'gallery' ? ' gallery' : ''); g.textContent = '';
+  if (!list.length) { const e = el('div', 'empty'); e.appendChild(el('b', null, l.empty)); e.appendChild(document.createTextNode(l.emptyHint)); g.appendChild(e); return; }
+  const frag = document.createDocumentFragment();
+  list.forEach(c => frag.appendChild(state.view === 'gallery' ? renderThumb(c) : renderCard(c)));
+  g.appendChild(frag);
+}
+
+/* ---------- language, chrome ---------- */
+function applyLang() {
+  const l = L(); setElRe();
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll('[data-i]').forEach(n => { if (typeof l[n.dataset.i] === 'string') n.textContent = l[n.dataset.i]; });
+  $('q').placeholder = l.ph; $('tip').textContent = l.tip;
+  $('footer').innerHTML = l.footer.replace('{v}', DATA.version);
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang)));
+  buildFilters(); renderSquad(); update();
+  if (!$('drawer').hidden && drawerNum != null) openDrawer(drawerNum);
+}
+document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { if (state.lang !== b.dataset.lang) { state.lang = b.dataset.lang; store.set('spam-lang', state.lang); applyLang(); } });
+document.querySelectorAll('.seg [data-view]').forEach(b => b.onclick = () => {
+  state.view = b.dataset.view; store.set('spam-view', state.view);
+  document.querySelectorAll('.seg [data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); update();
+});
+document.querySelectorAll('.seg [data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === state.view)));
+let qt; $('q').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => { state.q = e.target.value; update(); }, 110); });
+$('qclear').onclick = () => { $('q').value = ''; state.q = ''; update(); $('q').focus(); };
+$('sort').onchange = e => { state.sort = e.target.value; update(); };
+$('theme').onclick = () => {
+  const r = document.documentElement, sysDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const cur = r.dataset.theme || (sysDark ? 'dark' : 'light'), next = cur === 'dark' ? 'light' : 'dark';
+  r.dataset.theme = next; store.set('spam-theme', next);
+};
+const mobile = () => matchMedia('(max-width: 900px)').matches;
+let scrim = null;
+function setSide(open) {
+  if (mobile()) {
+    document.body.classList.toggle('side-open', open);
+    if (open && !scrim) { scrim = document.createElement('div'); scrim.className = 'side-scrim'; scrim.onclick = () => setSide(false); document.body.appendChild(scrim); }
+    if (!open && scrim) { scrim.remove(); scrim = null; }
+  } else {
+    document.body.classList.toggle('filters-closed', !open); store.set('spam-filters-open', open ? '1' : '0');
+  }
+  $('filtersBtn').setAttribute('aria-expanded', String(open));
+}
+$('filtersBtn').onclick = () => setSide(mobile() ? !document.body.classList.contains('side-open') : document.body.classList.contains('filters-closed'));
+$('sideClose').onclick = $('sideDone').onclick = () => setSide(false);
+$('grid').addEventListener('click', e => {
+  const b = e.target.closest('.kw'); if (!b) return;
+  const w = /\s/.test(b.dataset.kw) ? '"' + b.dataset.kw + '"' : b.dataset.kw;
+  $('q').value = w; state.q = w; update(); scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.addEventListener('keydown', e => {
+  if (!$('drawer').hidden) {
+    if (e.key === 'Escape') { e.preventDefault(); closeDrawer(); }
+    else if (e.key === 'ArrowRight') stepDrawer(1);
+    else if (e.key === 'ArrowLeft') stepDrawer(-1);
+    return;
+  }
+  if (e.key === 'Escape' && document.body.classList.contains('side-open')) { setSide(false); return; }
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (e.key === '/' && !typing) { e.preventDefault(); $('q').focus(); $('q').select(); }
+  else if (e.key === 'Escape' && document.activeElement === $('q')) { $('q').value = ''; state.q = ''; update(); }
+});
+if (document.body.classList.contains('dock-min')) $('sqMin').textContent = '▴';
+$('filtersBtn').setAttribute('aria-expanded', String(!document.body.classList.contains('filters-closed') && !mobile()));
+applyLang();
+</script>
+</body>
+</html>
