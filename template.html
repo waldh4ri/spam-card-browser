@@ -339,6 +339,32 @@ mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 3px; pa
 @keyframes slide { from { transform: translateX(40px); opacity: 0; } }
 @keyframes fade { from { opacity: 0; } }
 
+/* ---------- artwork lightbox (always dark, like a gallery wall) ---------- */
+.art.zoomable { cursor: zoom-in; }
+.zoomhint {
+  position: absolute; z-index: 2; left: 50%; top: 45%; translate: -50% -50%; width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(29, 32, 33, .55); backdrop-filter: blur(4px); color: #fbf1c7; display: grid; place-items: center; opacity: 0; transition: opacity .15s; pointer-events: none;
+}
+.art.zoomable:hover .zoomhint, .art.zoomable:focus-visible .zoomhint { opacity: 1; }
+.lightbox { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: max(16px, 3vh) 16px; }
+.lb-scrim { position: absolute; inset: 0; background: rgba(29, 32, 33, .88); backdrop-filter: blur(8px); animation: fade .2s ease-out; }
+.lb-fig { position: relative; margin: 0; display: flex; flex-direction: column; align-items: center; gap: .9rem; max-width: 100%; animation: zoomin .28s cubic-bezier(.2, .8, .2, 1); }
+.lb-fig img {
+  display: block; width: min(92vw, calc((100vh - 9.5rem) * 716 / 1024), 716px); height: auto; aspect-ratio: 716 / 1024; object-fit: cover; border-radius: 18px; background: #282828;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .85), 0 0 0 1px color-mix(in srgb, var(--ec) 55%, transparent), 0 0 70px -12px color-mix(in srgb, var(--ec) 50%, transparent);
+}
+.lb-fig figcaption { display: flex; flex-direction: column; align-items: center; gap: .15rem; text-align: center; }
+.lb-fig figcaption b { font: 800 1.35rem/1.15 var(--font-display); color: #fbf1c7; }
+.lb-fig figcaption span { font-size: .88rem; color: #bdae93; }
+.lb-fig figcaption a { color: #fabd2f; font-weight: 700; text-decoration: none; border-bottom: 1px solid rgba(250, 189, 47, .4); }
+.lb-fig figcaption a:hover { border-bottom-color: #fabd2f; }
+.lb-close {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(235, 219, 178, .25); background: rgba(40, 40, 40, .75); color: #ebdbb2; font-size: 1.05rem;
+}
+.lb-close:hover { border-color: #fabd2f; color: #fabd2f; }
+@keyframes zoomin { from { transform: scale(.94); opacity: 0; } }
+
 /* ---------- squad dock ---------- */
 .dock {
   position: fixed; z-index: 40; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); translate: -50% 0; width: min(980px, calc(100% - 24px));
@@ -501,6 +527,15 @@ footer a { color: var(--gold); }
   </div>
 </div>
 
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Artwork">
+  <div class="lb-scrim" data-lbclose></div>
+  <figure class="lb-fig">
+    <img id="lbImg" alt="">
+    <figcaption><b id="lbName"></b><span id="lbCredit"></span></figcaption>
+  </figure>
+  <button class="lb-close" id="lbClose" aria-label="Close">✕</button>
+</div>
+
 <div class="dock" id="dock" hidden>
   <div class="dt"><span data-i="squad">Squad</span> <span id="sqCount"></span><small data-i="squadSub">Team of 4</small></div>
   <div class="slots" id="slots"></div>
@@ -514,7 +549,7 @@ const IMG = 'https://www.spamgame.com/data/';
 const ASSETS = __ASSETS__;
 const I18N = {
   en: {
-    tagline: 'Unofficial card pool explorer',
+    tagline: 'Unofficial card pool explorer', viewArt: 'View artwork',
     ac: { card: 'Card', ability: 'Ability', talent: 'Talent', tox: 'Tox', keyword: 'Keyword' },
     acGo: { open: 'Open ↵', filter: 'Add filter ↵', search: 'Search ↵', exclude: 'Exclude ↵' },
     acCards: n => n + (n === 1 ? ' card' : ' cards'), acHint: '↑↓ to move · Enter or Tab to pick · Esc to close', filters: 'Filters', close: 'Close', ph: 'Search cards, abilities, Tox, talents…',
@@ -538,7 +573,7 @@ const I18N = {
     footer: 'Unofficial fan project, not affiliated with Ticroco. “Spam” and its contents belong to their rights holders. Card data, icons and illustrations come from the public <a href="https://www.spamgame.com/spamdex" target="_blank" rel="noopener">SPAMDEX</a> (patch {v}) under its <a href="https://spamgame.com/conditions-donnees-cartes" target="_blank" rel="noopener">non-commercial terms</a>; each illustration is credited to its artist. Not for commercial use.'
   },
   fr: {
-    tagline: 'Explorateur de cartes non officiel',
+    tagline: 'Explorateur de cartes non officiel', viewArt: 'Voir l\u2019illustration',
     ac: { card: 'Carte', ability: 'Capacité', talent: 'Talent', tox: 'Tox', keyword: 'Mot-clé' },
     acGo: { open: 'Ouvrir ↵', filter: 'Filtrer ↵', search: 'Chercher ↵', exclude: 'Exclure ↵' },
     acCards: n => n + (n > 1 ? ' cartes' : ' carte'), acHint: '↑↓ pour naviguer · Entrée ou Tab pour choisir · Échap pour fermer', filters: 'Filtres', close: 'Fermer', ph: 'Chercher cartes, capacités, Tox, talents…',
@@ -714,7 +749,7 @@ function boostTags(parent, list) {
   });
 }
 const inSquad = c => state.squad.includes(c.number);
-function artBlock(c, big) {
+function artBlock(c, big, zoom) {
   const t = T(c), art = el('div', 'art');
   art.appendChild(pic(asset('art', c.slug) || IMG + c.art, IMG + c.art, 'pic', t.name));
   art.appendChild(el('span', 'num', '#' + c.number));
@@ -725,9 +760,15 @@ function artBlock(c, big) {
     else cr.appendChild(document.createTextNode(c.artist));
     art.appendChild(cr);
   }
+  if (zoom) {
+    art.classList.add('zoomable'); art.tabIndex = 0; art.setAttribute('role', 'button'); art.setAttribute('aria-label', L().viewArt + ': ' + t.name);
+    const z = el('span', 'zoomhint'); z.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>'; art.appendChild(z);
+    art.addEventListener('click', e => { if (e.target.closest('a, button')) return; openLightbox(c); });
+    art.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(c); } });
+  }
   return art;
 }
-function header(c) {
+function header(c, noRes) {
   const t = T(c), frag = document.createDocumentFragment();
   const tb = el('div', 'titlebar'); tb.appendChild(elIcon(c.element)); const h = el('h2'); hl(h, t.name); tb.appendChild(h); tb.appendChild(gemIcon(c.rarity)); frag.appendChild(tb);
   const sub = el('div', 'subline');
@@ -737,7 +778,7 @@ function header(c) {
   frag.appendChild(sub);
   const res = el('div', 'res'); res.title = L().resist;
   RES.forEach(k => { const v = c.res[k], x = el('div', v >= 20 ? 'hi' : v < 0 ? 'neg' : ''); x.style.setProperty('--rc', 'var(--c-' + k + ')'); x.title = elName(k) + ' ' + v + '%'; x.appendChild(elIcon(k, '')); x.appendChild(document.createTextNode(v)); res.appendChild(x); });
-  frag.appendChild(res);
+  if (!noRes) frag.appendChild(res);
   return frag;
 }
 function abilityRow(c, a, i, full) {
@@ -791,7 +832,7 @@ function pinButton(c, cls) {
 function renderCard(c) {
   const t = T(c), l = L();
   const card = el('article', 'card e-' + c.element + ' r-' + c.rarity); card.dataset.num = c.number;
-  card.appendChild(artBlock(c)); card.appendChild(header(c)); card.appendChild(cardBody(c));
+  card.appendChild(artBlock(c, false, true)); card.appendChild(header(c)); card.appendChild(cardBody(c));
   const f = el('div', 'cfoot'), kws = el('div', 'kws');
   t.keywords.forEach(k => { const b = el('button', 'kw', k.title); b.type = 'button'; b.title = k.description; b.dataset.kw = k.title; kws.appendChild(b); });
   f.appendChild(kws);
@@ -820,7 +861,7 @@ function openDrawer(num) {
   if ($('drawer').hidden) lastFocus = document.activeElement;
   const body = $('dBody'); body.textContent = '';
   const card = el('article', 'card e-' + c.element + ' r-' + c.rarity);
-  card.appendChild(artBlock(c, true)); card.appendChild(header(c)); card.appendChild(cardBody(c, true));
+  card.appendChild(artBlock(c, true, true)); card.appendChild(header(c, true)); card.appendChild(cardBody(c, true));
   const rs = el('div', 'block'); rs.appendChild(el('h4', null, l.resist)); const rf = el('div', 'resfull');
   RES.forEach(k => {
     const v = c.res[k], row = el('div'); row.style.setProperty('--rc', 'var(--c-' + k + ')');
@@ -854,6 +895,32 @@ function stepDrawer(d) { const i = lastList.findIndex(x => x.number === drawerNu
 $('dPrev').onclick = () => stepDrawer(-1); $('dNext').onclick = () => stepDrawer(1); $('dClose').onclick = closeDrawer;
 $('drawer').addEventListener('click', e => { if (e.target.dataset.close != null) closeDrawer(); });
 $('dPin').onclick = () => { toggleSquad(byNum[drawerNum]); openDrawer(drawerNum); };
+
+/* ---------- artwork lightbox ---------- */
+let lbLastFocus = null;
+function openLightbox(c) {
+  const t = T(c), lb = $('lightbox'), img = $('lbImg'), l = L();
+  lb.style.setProperty('--ec', 'var(--c-' + c.element + ')');
+  img.dataset.num = c.number; img.alt = t.name; img.src = asset('art', c.slug) || IMG + c.art;
+  // the embedded art shows instantly; swap to the sharper 1024px original when it is reachable
+  if (c.art) { const hi = IMG + c.art.replace('/512/', '/1024/'), pre = new Image(); pre.onload = () => { if (!lb.hidden && img.dataset.num == c.number) img.src = hi; }; pre.src = hi; }
+  $('lbName').textContent = t.name;
+  const cr = $('lbCredit'); cr.textContent = '';
+  if (c.artist) {
+    cr.appendChild(document.createTextNode(l.art + ': '));
+    if (c.artistLink) { const a = document.createElement('a'); a.href = c.artistLink; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = c.artist + ' ↗'; cr.appendChild(a); }
+    else cr.appendChild(document.createTextNode(c.artist));
+  }
+  if (lb.hidden) lbLastFocus = document.activeElement;
+  lb.setAttribute('aria-label', l.viewArt + ': ' + t.name);
+  lb.hidden = false; document.body.style.overflow = 'hidden'; $('lbClose').focus({ preventScroll: true });
+}
+function closeLightbox() {
+  $('lightbox').hidden = true; if ($('drawer').hidden) document.body.style.overflow = '';
+  if (lbLastFocus && lbLastFocus.focus) lbLastFocus.focus({ preventScroll: true });
+}
+$('lbClose').onclick = closeLightbox;
+$('lightbox').addEventListener('click', e => { if (e.target.dataset.lbclose != null || e.target === $('lightbox') || e.target.classList.contains('lb-fig')) closeLightbox(); });
 
 /* ---------- squad ---------- */
 function toggleSquad(c) {
@@ -1190,6 +1257,7 @@ $('grid').addEventListener('click', e => {
   $('q').value = w; state.q = w; update(); scrollTo({ top: 0, behavior: 'smooth' });
 });
 document.addEventListener('keydown', e => {
+  if (!$('lightbox').hidden) { if (e.key === 'Escape') { e.preventDefault(); closeLightbox(); } return; }
   if (!$('drawer').hidden) {
     if (e.key === 'Escape') { e.preventDefault(); closeDrawer(); }
     else if (e.key === 'ArrowRight') stepDrawer(1);
