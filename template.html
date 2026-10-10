@@ -175,6 +175,10 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .checks label { display: inline-flex; gap: .35rem; align-items: center; font-size: .8rem; border: 1px solid var(--line); border-radius: 999px; padding: .22rem .6rem; background: var(--panel-2); cursor: pointer; }
 .checks input { accent-color: var(--gold); margin: 0; }
 .side-foot { display: none; }
+.reset-btn { flex: none; width: 100%; height: var(--ctl-h); border-radius: 10px; border: 1px solid var(--red); background: var(--red); color: var(--panel);
+  font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; transition: filter .15s, opacity .15s; }
+.reset-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.reset-btn:disabled { opacity: .4; cursor: default; }
 
 /* ---------- results header ---------- */
 main { min-width: 0; padding: 1.1rem max(16px, 2vw) 0; display: flex; flex-direction: column; min-height: calc(100vh - var(--topbar)); }
@@ -501,6 +505,10 @@ footer a { color: var(--gold); }
       <h3 data-i="secScope">Search in</h3>
       <div class="checks" id="f-scope"></div>
     </section>
+    <button type="button" class="reset-btn" id="sideReset">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      <span data-i="resetF">Reset filters</span>
+    </button>
   </aside>
   <div class="side-foot"><button id="sideDone"></button></div>
 
@@ -551,7 +559,7 @@ const IMG = 'https://www.spamgame.com/data/';
 const ASSETS = __ASSETS__;
 const I18N = {
   en: {
-    tagline: 'Unofficial card pool explorer', viewArt: 'View artwork',
+    tagline: 'Unofficial card pool explorer', viewArt: 'View artwork', resetF: 'Reset filters',
     ac: { card: 'Card', ability: 'Ability', talent: 'Talent', tox: 'Tox', keyword: 'Keyword' },
     acGo: { open: 'Open ↵', filter: 'Add filter ↵', search: 'Search ↵', exclude: 'Exclude ↵' },
     acCards: n => n + (n === 1 ? ' card' : ' cards'), acHint: '↑↓ to move · Enter or Tab to pick · Esc to close', filters: 'Filters', close: 'Close', ph: 'Search cards, abilities, Tox, talents…',
@@ -575,7 +583,7 @@ const I18N = {
     footer: 'Unofficial fan project, not affiliated with Ticroco. “Spam” and its contents belong to their rights holders. Card data, icons and illustrations come from the public <a href="https://www.spamgame.com/spamdex" target="_blank" rel="noopener">SPAMDEX</a> (patch {v}) under its <a href="https://spamgame.com/conditions-donnees-cartes" target="_blank" rel="noopener">non-commercial terms</a>; each illustration is credited to its artist. Not for commercial use.'
   },
   fr: {
-    tagline: 'Explorateur de cartes non officiel', viewArt: 'Voir l\u2019illustration',
+    tagline: 'Explorateur de cartes non officiel', resetF: 'Réinitialiser les filtres', viewArt: 'Voir l\u2019illustration',
     ac: { card: 'Carte', ability: 'Capacité', talent: 'Talent', tox: 'Tox', keyword: 'Mot-clé' },
     acGo: { open: 'Ouvrir ↵', filter: 'Filtrer ↵', search: 'Chercher ↵', exclude: 'Exclure ↵' },
     acCards: n => n + (n > 1 ? ' cartes' : ' carte'), acHint: '↑↓ pour naviguer · Entrée ou Tab pour choisir · Échap pour fermer', filters: 'Filtres', close: 'Fermer', ph: 'Chercher cartes, capacités, Tox, talents…',
@@ -1085,7 +1093,7 @@ function update() {
   ).sort(SORTERS[state.sort]);
   lastList = list;
   $('count').textContent = list.length; $('countLbl').textContent = l.cardsLbl(list.length) + ' ' + l.of(DATA.cards.length);
-  const n = activeCount(); $('fbadge').textContent = n || ''; $('sideDone').textContent = l.show(list.length);
+  const n = activeCount(); $('fbadge').textContent = n || ''; $('sideReset').disabled = !n && !state.q.trim(); $('sideDone').textContent = l.show(list.length);
   $('qclear').hidden = !state.q;
   renderPills();
   const g = $('grid'); g.className = 'grid' + (state.view === 'gallery' ? ' gallery' : ''); g.textContent = '';
@@ -1253,6 +1261,7 @@ function setSide(open) {
 }
 $('filtersBtn').onclick = () => setSide(mobile() ? !document.body.classList.contains('side-open') : document.body.classList.contains('filters-closed'));
 $('sideClose').onclick = $('sideDone').onclick = () => setSide(false);
+$('sideReset').onclick = resetAll;
 $('grid').addEventListener('click', e => {
   const b = e.target.closest('.kw'); if (!b) return;
   const w = /\s/.test(b.dataset.kw) ? '"' + b.dataset.kw + '"' : b.dataset.kw;
