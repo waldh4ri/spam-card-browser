@@ -20,7 +20,7 @@
   --r-common: #a7a2bb; --r-rare: #4fe6ff; --r-epic: #c06aff; --r-legendary: #ffc756; --r-divine: #f0e9ff;
   --font-display: "Bricolage Grotesque", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --font-body: "Figtree", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --radius: 16px; --topbar: 64px; --side: 312px;
+  --radius: 16px; --topbar: 64px; --side: 312px; --ctl-h: 40px;
 }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
   color-scheme: light;
@@ -71,9 +71,9 @@ img { max-width: 100%; }
 .brand img { width: 30px; height: 30px; filter: drop-shadow(0 2px 6px rgba(255, 190, 60, .4)); }
 .brand b { font: 800 1.1rem/1 var(--font-display); letter-spacing: -.01em; }
 .brand small { display: block; font-size: .68rem; color: var(--dim); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
-.search { flex: 1; min-width: 0; position: relative; max-width: 640px; }
+.search { flex: 1 1 640px; min-width: 0; position: relative; max-width: 640px; }
 .search input {
-  width: 100%; height: 42px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel);
+  width: 100%; height: var(--ctl-h); border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel);
   padding: 0 4.4rem 0 2.5rem; font-size: .98rem; transition: border-color .15s, box-shadow .15s;
 }
 .search input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px var(--gold-soft); }
@@ -84,7 +84,7 @@ img { max-width: 100%; }
 }
 .search .clear { right: 2.4rem; border: 0; background: transparent; font-size: 1.1rem; line-height: 1; padding: .2rem .35rem; }
 .tb-btn, .seg button, .lang button {
-  height: 38px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); padding: 0 .75rem;
+  height: var(--ctl-h); border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); padding: 0 .75rem;
   display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .85rem; white-space: nowrap;
 }
 .tb-btn:hover, .seg button:hover, .lang button:hover { border-color: var(--gold); }
@@ -101,7 +101,8 @@ img { max-width: 100%; }
 .lang button:first-child { border-radius: 10px 0 0 10px; margin-left: 0; }
 .lang button:last-child { border-radius: 0 10px 10px 0; }
 select.tb-btn { padding-right: .4rem; }
-.tb-group { display: flex; gap: .5rem; align-items: center; }
+.tb-group { display: flex; gap: .5rem; align-items: center; flex: 1 0 auto; }
+.tb-right { display: flex; gap: .5rem; align-items: center; margin-left: auto; }
 
 /* ---------- layout ---------- */
 .layout { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); align-items: start; }
@@ -402,6 +403,7 @@ footer a { color: var(--gold); }
       <option value="number" data-i="s_number">#</option><option value="name" data-i="s_name">Name</option><option value="spamton" data-i="s_spamton">Spamtons</option>
       <option value="hp" data-i="s_hp">HP</option><option value="rarity" data-i="s_rarity">Rarity</option><option value="element" data-i="s_element">Element</option>
     </select>
+    <div class="tb-right">
     <div class="seg" role="group" aria-label="View">
       <button data-view="cards" aria-pressed="true" title="Cards"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg><span class="lbl tb-label" data-i="v_cards">Cards</span></button>
       <button data-view="gallery" aria-pressed="false" title="Gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lbl tb-label" data-i="v_gallery">Gallery</span></button>
@@ -410,6 +412,7 @@ footer a { color: var(--gold); }
       <button data-lang="en" aria-pressed="true" lang="en">EN</button><button data-lang="fr" aria-pressed="false" lang="fr">FR</button>
     </div>
     <button class="tb-btn" id="theme" aria-label="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg></button>
+    </div>
   </div>
 </header>
 
