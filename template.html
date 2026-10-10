@@ -137,6 +137,7 @@ body.filters-closed .side { display: none; }
   border-right: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent);
   padding: 1rem 1rem 0; display: flex; flex-direction: column; gap: 1.35rem; scrollbar-width: thin;
 }
+.side > * { flex-shrink: 0; }
 .side-head { display: none; }
 .fsec h3 {
   margin: 0 0 .6rem; font: 700 .72rem/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
@@ -417,15 +418,17 @@ footer a { color: var(--gold); }
   .side {
     position: fixed; z-index: 70; top: 0; left: 0; bottom: 0; width: min(380px, 92vw); height: auto; background: var(--panel);
     transform: translateX(-105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); box-shadow: 20px 0 60px -20px rgba(0, 0, 0, .6);
-    padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 4.9rem;
+    padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 5.5rem;
   }
-  .reset-wrap { bottom: 4.5rem; }
   body.side-open .side { transform: none; }
   .side-head { display: flex; align-items: center; justify-content: space-between; }
   .side-head b { font: 800 1.2rem var(--font-display); }
   .side-foot { display: block; position: fixed; z-index: 71; left: 0; bottom: 0; width: min(380px, 92vw); padding: .75rem 1rem max(.75rem, env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); transform: translateX(-105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
   body.side-open .side-foot { transform: none; }
-  .side-foot button { width: 100%; height: 44px; border-radius: 12px; border: 0; background: var(--gold); color: var(--gold-ink); font-weight: 800; }
+  .side-foot { display: flex; gap: .5rem; }
+  .side-foot #sideDone { flex: 1; min-width: 0; height: 44px; border-radius: 12px; border: 0; background: var(--gold); color: var(--gold-ink); font-weight: 800; }
+  .side-foot .reset-btn { width: auto; flex: none; height: 44px; border-radius: 12px; padding: 0 .9rem; }
+  .reset-wrap { display: none; }
   .side-scrim { position: fixed; inset: 0; z-index: 65; background: rgba(29, 32, 33, .6); }
   .dock { grid-template-columns: minmax(0, 1fr) auto; }
   .dock .slots { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -514,7 +517,10 @@ footer a { color: var(--gold); }
       </button>
     </div>
   </aside>
-  <div class="side-foot"><button id="sideDone"></button></div>
+  <div class="side-foot">
+    <button type="button" class="reset-btn" id="sideReset2"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span data-i="resetShort">Reset</span></button>
+    <button id="sideDone"></button>
+  </div>
 
   <main id="main">
     <div class="resbar">
@@ -563,7 +569,7 @@ const IMG = 'https://spamgame.com/data/'; // canonical host named in the SPAMDEX
 const ASSETS = __ASSETS__;
 const I18N = {
   en: {
-    tagline: 'Unofficial card pool explorer', viewArt: 'View artwork', resetF: 'Reset filters',
+    tagline: 'Unofficial card pool explorer', viewArt: 'View artwork', resetF: 'Reset filters', resetShort: 'Reset',
     ac: { card: 'Card', ability: 'Ability', talent: 'Talent', tox: 'Tox', keyword: 'Keyword' },
     acGo: { open: 'Open ↵', filter: 'Add filter ↵', search: 'Search ↵', exclude: 'Exclude ↵' },
     acCards: n => n + (n === 1 ? ' card' : ' cards'), acHint: '↑↓ to move · Enter or Tab to pick · Esc to close', filters: 'Filters', close: 'Close', ph: 'Search cards, abilities, Tox, talents…',
@@ -587,7 +593,7 @@ const I18N = {
     footer: 'Unofficial fan project, not affiliated with Ticroco. “Spam” and its contents belong to their rights holders. Card data, icons and illustrations come from the public <a href="https://www.spamgame.com/spamdex" target="_blank" rel="noopener">SPAMDEX</a> (patch {v}) under its <a href="https://spamgame.com/conditions-donnees-cartes" target="_blank" rel="noopener">non-commercial terms</a>; each illustration is credited to its artist. Not for commercial use.'
   },
   fr: {
-    tagline: 'Explorateur de cartes non officiel', resetF: 'Réinitialiser les filtres', viewArt: 'Voir l\u2019illustration',
+    tagline: 'Explorateur de cartes non officiel', resetF: 'Réinitialiser les filtres', resetShort: 'Réinit.', viewArt: 'Voir l\u2019illustration',
     ac: { card: 'Carte', ability: 'Capacité', talent: 'Talent', tox: 'Tox', keyword: 'Mot-clé' },
     acGo: { open: 'Ouvrir ↵', filter: 'Filtrer ↵', search: 'Chercher ↵', exclude: 'Exclure ↵' },
     acCards: n => n + (n > 1 ? ' cartes' : ' carte'), acHint: '↑↓ pour naviguer · Entrée ou Tab pour choisir · Échap pour fermer', filters: 'Filtres', close: 'Fermer', ph: 'Chercher cartes, capacités, Tox, talents…',
@@ -1098,7 +1104,7 @@ function update() {
   ).sort(SORTERS[state.sort]);
   lastList = list;
   $('count').textContent = list.length; $('countLbl').textContent = l.cardsLbl(list.length) + ' ' + l.of(DATA.cards.length);
-  const n = activeCount(); $('fbadge').textContent = n || ''; $('sideReset').disabled = !n && !state.q.trim(); $('sideDone').textContent = l.show(list.length);
+  const n = activeCount(); $('fbadge').textContent = n || ''; $('sideReset').disabled = $('sideReset2').disabled = !n && !state.q.trim(); $('sideDone').textContent = l.show(list.length);
   $('qclear').hidden = !state.q;
   renderPills();
   const g = $('grid'); g.className = 'grid' + (state.view === 'gallery' ? ' gallery' : ''); g.textContent = '';
@@ -1266,7 +1272,7 @@ function setSide(open) {
 }
 $('filtersBtn').onclick = () => setSide(mobile() ? !document.body.classList.contains('side-open') : document.body.classList.contains('filters-closed'));
 $('sideClose').onclick = $('sideDone').onclick = () => setSide(false);
-$('sideReset').onclick = resetAll;
+$('sideReset').onclick = $('sideReset2').onclick = resetAll;
 $('grid').addEventListener('click', e => {
   const b = e.target.closest('.kw'); if (!b) return;
   const w = /\s/.test(b.dataset.kw) ? '"' + b.dataset.kw + '"' : b.dataset.kw;
