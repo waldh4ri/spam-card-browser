@@ -57,6 +57,16 @@ def boosts(card, item):
         for x in (SIX if a['effect'] == 'AddSAttackMulticolor' else [e] if e else []):
             if x not in els: els.append(x)
     return [dict(t=t, e=e) for t, e in out.items()]
+def shapeinfo(ab):
+    """Hits per use and attack shape: multi-hit, all enemies, random targets (English text, same structure in every language)."""
+    dm = [a for a in ab['actions'] if a['kind'] == 'damage']
+    if not dm: return 0, []
+    hits = len(dm)  # each damage action is one hit; 'chain' is just its position in the sequence
+    e = ab['effect']; s = []
+    if hits > 1: s.append('multi')
+    if any(a['effect'] == 'DamageAll' for a in dm) or re.search(r'all enemy cards', e): s.append('all')
+    if re.search(r'damage[^/\n]*\bRandom\b|random (enemy|cards)|Random X\d', e): s.append('random')
+    return hits, s
 def healels(ab):
     out = []
     for a in ab['actions']:
@@ -99,9 +109,14 @@ for c in en['cards']:
     cards.append(dict(tox=tox, number=c['number'], slug=c['slug'], element=c['element'], rarity=c['rarity'], spamton=c['spamton'], hp=c['hp'],
         res=c['resistances'], art=a.get('small'), artFull=a.get('file'), artist=art.get('name'), artistLink=art.get('link'),
         ab=[dict(cd=y['cooldown'], precision=y['precision'], critChance=y['critChance'], critMultiplier=y['critMultiplier'],
-                 echo=y['cooldownResetChance'], uses=y['uses'], dmg=dmgels(c, y), heal=healels(y), boost=boosts(c, y)) for y in c['abilities']],
+                 echo=y['cooldownResetChance'], uses=y['uses'], dmg=dmgels(c, y), heal=healels(y), boost=boosts(c, y), hits=shapeinfo(y)[0], shape=shapeinfo(y)[1]) for y in c['abilities']],
         tal=[dict(slot=y['slot'], elements=y.get('elements') or [], boost=boosts(c, y), grants=grants[i]) for i, y in enumerate(c['talents'])], t=t))
 
+# Cards with the AoE Tox (their own or one a talent grants) splash adjacent targets with every damaging ability
+for c in cards:
+    if any(x['k'] == 'aoe' for x in c['tox']):
+        for a in c['ab']:
+            if a['dmg']: a['shape'].append('aoe')
 def named(kind):
     out = []
     for item in en[kind]:
