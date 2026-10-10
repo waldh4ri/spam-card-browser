@@ -33,7 +33,7 @@ The data is published by Ticroco at https://spamgame.com/data/ under the [condit
 | Credit the artist of every illustration, with a link when one is provided | Each illustration (card, gallery tile, detail panel, full-size viewer) carries the artist's name and link from the `artwork.artist` field of the data. |
 | State that the project is not official | Every page ends with the notice, in English and French, and the README says it too. |
 | No commercial use | Free, no ads, no tracking, no paywall, no donations. |
-| Don't mislead | Art is only resized and cropped the way the published layout does (`fit: cover`, `align: top`). It is never presented as the author's own, and the game's logo is not used. The project name and header mark are original. |
+| Don't mislead | Art is only resized and cropped to fit (`fit: cover`, as the published layout does); the full illustration is one click away. It is never presented as the author's own, and the game's logo is not used. The project name and header mark are original. |
 | Data provided as is, format may change | `fetch_data.py` reads `index.json`, uses its `latest` version and `cards` path template, and stops with a clear message if the `schema` number is not the supported one. |
 | Removal on request | See below. |
 
