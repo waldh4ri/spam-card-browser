@@ -14,7 +14,7 @@
   --panel: #282828; --panel-2: #32302f; --raise: #3c3836; --line: #3c3836; --line-2: #504945;
   --fg: #ebdbb2; --muted: #bdae93; --dim: #928374;
   --gold: #fabd2f; --gold-ink: #282828; --gold-soft: rgba(250, 189, 47, .14);
-  --mark-bg: rgba(250, 189, 47, .3); --mark-fg: #fbf1c7; --red: #fb4934;
+  --mark-bg: rgba(250, 189, 47, .3); --mark-fg: #fbf1c7; --red: #fb4934; --shield: #504945;
   --shadow: 0 10px 30px -14px rgba(0, 0, 0, .7);
   --c-fire: #fb4934; --c-water: #83a598; --c-earth: #fe8019; --c-nature: #b8bb26; --c-light: #fabd2f; --c-shadow: #d3869b; --c-divine: #8ec07c;
   --r-common: #a89984; --r-rare: #83a598; --r-epic: #d3869b; --r-legendary: #fabd2f; --r-divine: #8ec07c;
@@ -28,7 +28,7 @@
   --panel: #fbf1c7; --panel-2: #f9f5d7; --raise: #ebdbb2; --line: #ebdbb2; --line-2: #d5c4a1;
   --fg: #3c3836; --muted: #665c54; --dim: #7c6f64;
   --gold: #b57614; --gold-ink: #fbf1c7; --gold-soft: rgba(181, 118, 20, .14);
-  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006;
+  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006; --shield: #d5c4a1;
   --shadow: 0 10px 28px -16px rgba(60, 56, 54, .35);
   --c-fire: #9d0006; --c-water: #076678; --c-earth: #af3a03; --c-nature: #79740e; --c-light: #b57614; --c-shadow: #8f3f71; --c-divine: #427b58;
   --r-common: #7c6f64; --r-rare: #076678; --r-epic: #8f3f71; --r-legendary: #b57614; --r-divine: #427b58; } }
@@ -38,7 +38,7 @@
   --panel: #fbf1c7; --panel-2: #f9f5d7; --raise: #ebdbb2; --line: #ebdbb2; --line-2: #d5c4a1;
   --fg: #3c3836; --muted: #665c54; --dim: #7c6f64;
   --gold: #b57614; --gold-ink: #fbf1c7; --gold-soft: rgba(181, 118, 20, .14);
-  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006;
+  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006; --shield: #d5c4a1;
   --shadow: 0 10px 28px -16px rgba(60, 56, 54, .35);
   --c-fire: #9d0006; --c-water: #076678; --c-earth: #af3a03; --c-nature: #79740e; --c-light: #b57614; --c-shadow: #8f3f71; --c-divine: #427b58;
   --r-common: #7c6f64; --r-rare: #076678; --r-epic: #8f3f71; --r-legendary: #b57614; --r-divine: #427b58; }
@@ -239,8 +239,10 @@ main { min-width: 0; padding: 1.1rem max(16px, 2vw) 0; display: flex; flex-direc
 .subline .rar { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .68rem; }
 .subline .hp { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
 .res { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: .6rem .85rem .2rem; position: relative; isolation: isolate; }
-.res::before { content: ""; position: absolute; z-index: -1; left: 50%; top: calc(50% + .2rem); width: 34px; height: 38px; translate: -50% -50%; pointer-events: none;
-  background: var(--ec); opacity: .32; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 26'%3E%3Cpath d='M12 1 2.5 4.6v7.1c0 6.1 4 11.4 9.5 13.3 5.5-1.9 9.5-7.2 9.5-13.3V4.6z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 26'%3E%3Cpath d='M12 1 2.5 4.6v7.1c0 6.1 4 11.4 9.5 13.3 5.5-1.9 9.5-7.2 9.5-13.3V4.6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.res::before { content: ""; position: absolute; z-index: -1; left: 50%; top: calc(50% + .2rem); width: 42px; height: 47px; translate: -50% -50%; pointer-events: none;
+  background: var(--shield); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 26'%3E%3Cpath d='M12 1 2.5 4.6v7.1c0 6.1 4 11.4 9.5 13.3 5.5-1.9 9.5-7.2 9.5-13.3V4.6z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 26'%3E%3Cpath d='M12 1 2.5 4.6v7.1c0 6.1 4 11.4 9.5 13.3 5.5-1.9 9.5-7.2 9.5-13.3V4.6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.res::after { content: ""; position: absolute; z-index: -1; left: calc(.85rem - 4px); right: calc(.85rem - 4px); top: calc(.6rem - 4px); bottom: calc(.2rem - 4px);
+  border-radius: 10px; background: var(--shield); pointer-events: none; }
 .res div { display: flex; align-items: center; justify-content: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--muted); background: color-mix(in srgb, var(--panel-2) 62%, transparent); border-radius: 7px; padding: 2px 0; border: 1px solid var(--line); }
 .res div.hi { color: var(--fg); font-weight: 700; border-color: color-mix(in srgb, var(--rc) 60%, var(--line)); background: color-mix(in srgb, var(--rc) 16%, transparent); }
 .res div.neg { color: var(--red); }
