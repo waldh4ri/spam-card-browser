@@ -14,7 +14,7 @@
   --panel: #282828; --panel-2: #32302f; --raise: #3c3836; --line: #3c3836; --line-2: #504945;
   --fg: #ebdbb2; --muted: #bdae93; --dim: #928374;
   --gold: #fabd2f; --gold-ink: #282828; --gold-soft: rgba(250, 189, 47, .14);
-  --mark-bg: rgba(250, 189, 47, .3); --mark-fg: #fbf1c7; --red: #fb4934; --shield: #504945;
+  --mark-bg: rgba(250, 189, 47, .3); --mark-fg: #fbf1c7; --red: #fb4934; --shield: #504945; --blue: #83a598; --blue-ink: #1d2021;
   --shadow: 0 10px 30px -14px rgba(0, 0, 0, .7);
   --c-fire: #fb4934; --c-water: #83a598; --c-earth: #fe8019; --c-nature: #b8bb26; --c-light: #fabd2f; --c-shadow: #d3869b; --c-divine: #8ec07c;
   --r-common: #a89984; --r-rare: #83a598; --r-epic: #d3869b; --r-legendary: #fabd2f; --r-divine: #8ec07c;
@@ -28,7 +28,7 @@
   --panel: #fbf1c7; --panel-2: #f9f5d7; --raise: #ebdbb2; --line: #ebdbb2; --line-2: #d5c4a1;
   --fg: #3c3836; --muted: #665c54; --dim: #7c6f64;
   --gold: #b57614; --gold-ink: #fbf1c7; --gold-soft: rgba(181, 118, 20, .14);
-  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006; --shield: #d5c4a1;
+  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006; --shield: #d5c4a1; --blue: #076678; --blue-ink: #fbf1c7;
   --shadow: 0 10px 28px -16px rgba(60, 56, 54, .35);
   --c-fire: #9d0006; --c-water: #076678; --c-earth: #af3a03; --c-nature: #79740e; --c-light: #b57614; --c-shadow: #8f3f71; --c-divine: #427b58;
   --r-common: #7c6f64; --r-rare: #076678; --r-epic: #8f3f71; --r-legendary: #b57614; --r-divine: #427b58; } }
@@ -38,7 +38,7 @@
   --panel: #fbf1c7; --panel-2: #f9f5d7; --raise: #ebdbb2; --line: #ebdbb2; --line-2: #d5c4a1;
   --fg: #3c3836; --muted: #665c54; --dim: #7c6f64;
   --gold: #b57614; --gold-ink: #fbf1c7; --gold-soft: rgba(181, 118, 20, .14);
-  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006; --shield: #d5c4a1;
+  --mark-bg: rgba(215, 153, 33, .35); --mark-fg: #282828; --red: #9d0006; --shield: #d5c4a1; --blue: #076678; --blue-ink: #fbf1c7;
   --shadow: 0 10px 28px -16px rgba(60, 56, 54, .35);
   --c-fire: #9d0006; --c-water: #076678; --c-earth: #af3a03; --c-nature: #79740e; --c-light: #b57614; --c-shadow: #8f3f71; --c-divine: #427b58;
   --r-common: #7c6f64; --r-rare: #076678; --r-epic: #8f3f71; --r-legendary: #b57614; --r-divine: #427b58; }
@@ -88,6 +88,9 @@ img { max-width: 100%; }
   display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .85rem; white-space: nowrap;
 }
 .tb-btn:hover, .seg button:hover, .lang button:hover { border-color: var(--gold); }
+a.tb-btn { text-decoration: none; color: var(--fg); }
+.tb-btn.steam { background: var(--blue); border-color: var(--blue); color: var(--blue-ink); }
+.tb-btn.steam:hover { border-color: var(--blue); filter: brightness(1.1); }
 .tb-btn .badge { background: var(--gold); color: var(--gold-ink); border-radius: 999px; font-size: .7rem; padding: 0 .4rem; min-width: 1.2rem; text-align: center; }
 .tb-btn .badge:empty { display: none; }
 .tb-btn svg { width: 17px; height: 17px; }
@@ -435,7 +438,7 @@ footer a { color: var(--gold); }
   .dock { grid-template-columns: minmax(0, 1fr) auto; }
   .dock .slots { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 560px) { .brand > span { display: none; } .search kbd { display: none; } .search input { padding-right: 2.2rem; } .search .clear { right: .4rem; } .brand b { font-size: 1rem; } .seg .lbl { display: none; } .dbody .art { height: 300px; } }
+@media (max-width: 560px) { .brand > span { display: none; } .tb-group, .tb-right { gap: .35rem; } .seg button { padding: 0 .55rem; } .lang button { padding: 0 .45rem; } select.tb-btn { max-width: 98px; padding-left: .5rem; } .tb-btn { padding: 0 .6rem; } .search kbd { display: none; } .search input { padding-right: 2.2rem; } .search .clear { right: .4rem; } .brand b { font-size: 1rem; } .seg .lbl { display: none; } .dbody .art { height: 300px; } }
 
 @media (prefers-reduced-motion: no-preference) {
   .card.r-legendary:hover .art::before { opacity: 1; transform: translateX(100%); transition: transform 1.1s ease, opacity .2s; }
@@ -468,6 +471,10 @@ footer a { color: var(--gold); }
       <option value="hp" data-i="s_hp">HP</option><option value="rarity" data-i="s_rarity">Rarity</option><option value="element" data-i="s_element">Element</option>
     </select>
     <div class="tb-right">
+    <a class="tb-btn steam" id="steamBtn" href="https://store.steampowered.com/app/2902720/" target="_blank" rel="noopener noreferrer" title="SPAM on Steam" aria-label="SPAM on Steam (opens in a new tab)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+      <span class="tb-label" data-i="steam">Steam page</span>
+    </a>
     <div class="seg" role="group" aria-label="View">
       <button data-view="cards" aria-pressed="true" title="Cards"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg><span class="lbl tb-label" data-i="v_cards">Cards</span></button>
       <button data-view="gallery" aria-pressed="false" title="Gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lbl tb-label" data-i="v_gallery">Gallery</span></button>
@@ -574,7 +581,7 @@ const IMG = 'https://spamgame.com/data/'; // canonical host named in the SPAMDEX
 const ASSETS = __ASSETS__;
 const I18N = {
   en: {
-    tagline: 'Unofficial card pool explorer', shapeLbl: 'Attack shape', sh: { multi: 'Multi-hit', all: 'All enemies', random: 'Random targets', aoe: 'Splash (AoE)' }, p_shape: 'Attack', viewArt: 'View artwork', resetF: 'Reset filters', resetShort: 'Reset',
+    tagline: 'Unofficial card pool explorer', steam: 'Steam page', shapeLbl: 'Attack shape', sh: { multi: 'Multi-hit', all: 'All enemies', random: 'Random targets', aoe: 'Splash (AoE)' }, p_shape: 'Attack', viewArt: 'View artwork', resetF: 'Reset filters', resetShort: 'Reset',
     ac: { card: 'Card', ability: 'Ability', talent: 'Talent', tox: 'Tox', keyword: 'Keyword' },
     acGo: { open: 'Open ↵', filter: 'Add filter ↵', search: 'Search ↵', exclude: 'Exclude ↵' },
     acCards: n => n + (n === 1 ? ' card' : ' cards'), acHint: '↑↓ to move · Enter or Tab to pick · Esc to close', filters: 'Filters', close: 'Close', ph: 'Search cards, abilities, Tox, talents…',
@@ -598,7 +605,7 @@ const I18N = {
     footer: 'Unofficial fan project, not affiliated with Ticroco. “Spam” and its contents belong to their rights holders. Card data, icons and illustrations come from the public <a href="https://www.spamgame.com/spamdex" target="_blank" rel="noopener">SPAMDEX</a> (patch {v}) under its <a href="https://spamgame.com/conditions-donnees-cartes" target="_blank" rel="noopener">non-commercial terms</a>; each illustration is credited to its artist. Not for commercial use.'
   },
   fr: {
-    tagline: 'Explorateur de cartes non officiel', shapeLbl: 'Type d\u2019attaque', sh: { multi: 'Multi-coups', all: 'Tous les ennemis', random: 'Cibles al\u00e9atoires', aoe: 'Zone (AoE)' }, p_shape: 'Attaque', resetF: 'Réinitialiser les filtres', resetShort: 'Réinit.', viewArt: 'Voir l\u2019illustration',
+    tagline: 'Explorateur de cartes non officiel', steam: 'Page Steam', shapeLbl: 'Type d\u2019attaque', sh: { multi: 'Multi-coups', all: 'Tous les ennemis', random: 'Cibles al\u00e9atoires', aoe: 'Zone (AoE)' }, p_shape: 'Attaque', resetF: 'Réinitialiser les filtres', resetShort: 'Réinit.', viewArt: 'Voir l\u2019illustration',
     ac: { card: 'Carte', ability: 'Capacité', talent: 'Talent', tox: 'Tox', keyword: 'Mot-clé' },
     acGo: { open: 'Ouvrir ↵', filter: 'Filtrer ↵', search: 'Chercher ↵', exclude: 'Exclure ↵' },
     acCards: n => n + (n > 1 ? ' cartes' : ' carte'), acHint: '↑↓ pour naviguer · Entrée ou Tab pour choisir · Échap pour fermer', filters: 'Filtres', close: 'Fermer', ph: 'Chercher cartes, capacités, Tox, talents…',
