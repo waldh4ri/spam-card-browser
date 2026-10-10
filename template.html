@@ -238,9 +238,11 @@ main { min-width: 0; padding: 1.1rem max(16px, 2vw) 0; display: flex; flex-direc
 .subline { display: flex; flex-wrap: wrap; gap: .3rem .55rem; align-items: center; padding: .3rem .85rem 0; font-size: .76rem; color: var(--muted); }
 .subline .rar { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .68rem; }
 .subline .hp { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
-.res { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: .6rem .85rem .2rem; }
-.res div { display: flex; align-items: center; justify-content: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--panel-2); border-radius: 7px; padding: 2px 0; border: 1px solid var(--line); }
-.res div.hi { color: var(--fg); font-weight: 700; border-color: color-mix(in srgb, var(--rc) 60%, var(--line)); background: color-mix(in srgb, var(--rc) 14%, var(--panel-2)); }
+.res { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: .6rem .85rem .2rem; position: relative; isolation: isolate; }
+.res::before { content: ""; position: absolute; z-index: -1; left: 50%; top: calc(50% + .2rem); width: 34px; height: 38px; translate: -50% -50%; pointer-events: none;
+  background: var(--ec); opacity: .32; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 26'%3E%3Cpath d='M12 1 2.5 4.6v7.1c0 6.1 4 11.4 9.5 13.3 5.5-1.9 9.5-7.2 9.5-13.3V4.6z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 26'%3E%3Cpath d='M12 1 2.5 4.6v7.1c0 6.1 4 11.4 9.5 13.3 5.5-1.9 9.5-7.2 9.5-13.3V4.6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.res div { display: flex; align-items: center; justify-content: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--muted); background: color-mix(in srgb, var(--panel-2) 62%, transparent); border-radius: 7px; padding: 2px 0; border: 1px solid var(--line); }
+.res div.hi { color: var(--fg); font-weight: 700; border-color: color-mix(in srgb, var(--rc) 60%, var(--line)); background: color-mix(in srgb, var(--rc) 16%, transparent); }
 .res div.neg { color: var(--red); }
 .res img { width: 15px; height: 15px; }
 .block { padding: .55rem .85rem .1rem; }
