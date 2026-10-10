@@ -230,6 +230,7 @@ main { min-width: 0; padding: 1.1rem max(16px, 2vw) 0; display: flex; flex-direc
   content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
   background: linear-gradient(110deg, transparent 35%, rgba(250, 189, 47, .3) 50%, transparent 65%); transform: translateX(-100%);
 }
+.gemtop { position: absolute; z-index: 2; left: 50%; top: .4rem; translate: -50% 0; width: 88px; height: auto; object-fit: contain; pointer-events: none; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .6)); }
 .num { position: absolute; z-index: 2; left: .6rem; top: .6rem; font: 700 .72rem var(--font-body); background: rgba(29, 32, 33, .62); color: #fbf1c7; padding: .12rem .45rem; border-radius: 999px; backdrop-filter: blur(4px); }
 .coin {
   position: absolute; z-index: 2; right: .5rem; top: .45rem; width: 44px; height: 44px; display: grid; place-items: center;
@@ -312,7 +313,8 @@ mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 3px; pa
 .thumb .pinmini { position: absolute; z-index: 3; left: .45rem; bottom: auto; top: .45rem; width: 26px; height: 26px; border-radius: 8px; border: 0; background: rgba(29, 32, 33, .6); color: #fbf1c7; font-weight: 800; display: grid; place-items: center; opacity: 0; transition: opacity .15s; }
 .thumb:hover .pinmini, .thumb .pinmini.pinned, .thumb .pinmini:focus-visible { opacity: 1; }
 .thumb .pinmini.pinned { background: var(--gold); color: var(--gold-ink); }
-.thumb .num { left: auto; right: 2.6rem; top: .55rem; }
+.thumb .num { display: none; }
+.thumb .gemtop { width: 62px; top: .35rem; }
 .thumb.hitcard { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 .empty { grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--muted); }
@@ -791,6 +793,7 @@ function artBlock(c, big, zoom) {
   const t = T(c), art = el('div', 'art');
   if (c.art) art.appendChild(pic(asset('art', c.slug) || IMG + c.art, IMG + c.art, 'pic', t.name));
   art.appendChild(el('span', 'num', '#' + c.number));
+  const gm = gemIcon(c.rarity, 'gemtop'); gm.title = rarName(c.rarity); art.appendChild(gm);
   const coin = el('span', 'coin', String(c.spamton)); coin.style.backgroundImage = 'url("' + COIN + '")'; coin.title = c.spamton + ' Spamtons · ' + L().spamTip; art.appendChild(coin);
   if (c.artist) {
     const cr = el('span', 'credit'); cr.appendChild(document.createTextNode(L().art + ': '));
@@ -808,7 +811,7 @@ function artBlock(c, big, zoom) {
 }
 function header(c, noRes) {
   const t = T(c), frag = document.createDocumentFragment();
-  const tb = el('div', 'titlebar'); tb.appendChild(elIcon(c.element)); const h = el('h2'); hl(h, t.name); tb.appendChild(h); tb.appendChild(gemIcon(c.rarity)); frag.appendChild(tb);
+  const tb = el('div', 'titlebar'); tb.appendChild(elIcon(c.element)); const h = el('h2'); hl(h, t.name); tb.appendChild(h); frag.appendChild(tb);
   const sub = el('div', 'subline');
   const r = el('span', 'rar', rarName(c.rarity)); r.style.color = 'var(--r-' + c.rarity + ')'; sub.appendChild(r);
   const e = el('span', 'eltxt t-' + c.element, elName(c.element)); sub.appendChild(e);
@@ -888,7 +891,7 @@ function renderThumb(c) {
   card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', t.name); card.dataset.num = c.number;
   const art = artBlock(c); art.appendChild(pinButton(c, 'pinmini'));
   const cap = el('div', 'tcap'); const nb = el('b'); hl(nb, t.name); cap.appendChild(nb);
-  const sp = el('span'); sp.appendChild(elIcon(c.element, '')); sp.appendChild(gemIcon(c.rarity, '')); sp.appendChild(document.createTextNode(c.hp + ' ' + L().hp)); cap.appendChild(sp);
+  const sp = el('span'); sp.appendChild(elIcon(c.element, '')); sp.appendChild(document.createTextNode('#' + c.number + ' · ' + c.hp + ' ' + L().hp)); cap.appendChild(sp);
   art.appendChild(cap); card.appendChild(art);
   card.onclick = () => openDrawer(c.number);
   card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawer(c.number); } };
