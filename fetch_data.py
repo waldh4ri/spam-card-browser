@@ -2,17 +2,50 @@
 
 Fetches the latest card files (English and French), every card illustration
 and the UI icons (elements, rarity gems, Tox, Spamton coin) into this folder.
+
+The data is published by Ticroco at https://spamgame.com/data/ under
+https://spamgame.com/conditions-donnees-cartes (non-commercial fan projects,
+credit each artist, state the project is unofficial). The file layout comes
+from data/index.json. Re-runs are cheap: JSON is fetched with If-None-Match
+and images (whose names carry a content hash) are never downloaded twice.
 """
-import json, os, urllib.request
+import json, os, sys, urllib.error, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-BASE = 'https://www.spamgame.com/data/'
-UA = {'User-Agent': 'Mozilla/5.0 (spam-card-browser fan tool)'}
+BASE = 'https://spamgame.com/data/'  # canonical host named in the data terms
+UA = {'User-Agent': 'spam-card-browser/1.0 (non-commercial fan project; +https://github.com/waldh4ri/spam-card-browser)'}
+SUPPORTED_SCHEMA = 1  # the terms say the schema number changes when the format does
 LANGS = {'en': 'spamdex_cards.json', 'fr': 'spamdex_cards_fr.json'}
 
 
 def get(url):
     return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60).read()
+
+
+def get_json_cached(url, out):
+    """Fetch a JSON file, reusing the local copy when the server says it is unchanged."""
+    headers = dict(UA)
+    etag_file = out + '.etag'
+    if os.path.exists(out) and os.path.exists(etag_file):
+        headers['If-None-Match'] = open(etag_file).read().strip()
+    try:
+        resp = urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60)
+    except urllib.error.HTTPError as e:
+        if e.code == 304:
+            return json.load(open(out, encoding='utf-8'))
+        raise
+    body = resp.read()
+    open(out, 'wb').write(body)
+    if resp.headers.get('ETag'):
+        open(etag_file, 'w').write(resp.headers['ETag'])
+    return json.loads(body)
+
+
+def need_schema(doc, name):
+    if doc.get('schema') != SUPPORTED_SCHEMA:
+        sys.exit('%s has schema %r but this tool supports schema %d. The SPAMDEX format changed: '
+                 'check https://spamgame.com/conditions-donnees-cartes and update build_browser.py.'
+                 % (name, doc.get('schema'), SUPPORTED_SCHEMA))
 
 
 def save(url, path):
@@ -23,11 +56,13 @@ def save(url, path):
 
 
 index = json.loads(get(BASE + 'index.json'))
+need_schema(index, 'index.json')
 version = index['latest']
 print('SPAMDEX version', version)
 for lang, out in LANGS.items():
-    open(out, 'wb').write(get(BASE + index['cards'].format(version=version, language=lang)))
-    print('saved', out)
+    doc = get_json_cached(BASE + index['cards'].format(version=version, language=lang), out)
+    need_schema(doc, out)
+    print('ready', out)
 
 data = json.load(open(LANGS['en'], encoding='utf-8'))
 jobs = []
@@ -40,6 +75,6 @@ ui |= {s['icon'] for c in data['cards'] for s in c['skills'] if s.get('icon')}
 for p in ui:
     jobs.append((BASE + p, os.path.join('spamdex_images', 'ui', p[len('img/'):])))
 
-with ThreadPoolExecutor(6) as pool:
+with ThreadPoolExecutor(4) as pool:
     list(pool.map(lambda j: save(*j), jobs))
 print('downloaded', len(jobs), 'images into spamdex_images/')

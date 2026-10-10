@@ -68,7 +68,7 @@ img { max-width: 100%; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: .55rem; text-decoration: none; color: inherit; flex: none; }
-.brand img { width: 30px; height: 30px; filter: drop-shadow(0 2px 6px rgba(250, 189, 47, .35)); }
+.brand .mark { width: 32px; height: 32px; flex: none; filter: drop-shadow(0 2px 6px rgba(250, 189, 47, .3)); }
 .brand b { font: 800 1.1rem/1 var(--font-display); letter-spacing: -.01em; }
 .brand small { display: block; font-size: .68rem; color: var(--dim); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
 .search { flex: 1 1 640px; min-width: 0; position: relative; max-width: 640px; }
@@ -135,7 +135,7 @@ body.filters-closed .side { display: none; }
 .side {
   position: sticky; top: var(--topbar); height: calc(100vh - var(--topbar)); overflow: auto; overscroll-behavior: contain;
   border-right: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent);
-  padding: 1rem 1rem 6rem; display: flex; flex-direction: column; gap: 1.35rem; scrollbar-width: thin;
+  padding: 1rem 1rem 0; display: flex; flex-direction: column; gap: 1.35rem; scrollbar-width: thin;
 }
 .side-head { display: none; }
 .fsec h3 {
@@ -175,6 +175,7 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .checks label { display: inline-flex; gap: .35rem; align-items: center; font-size: .8rem; border: 1px solid var(--line); border-radius: 999px; padding: .22rem .6rem; background: var(--panel-2); cursor: pointer; }
 .checks input { accent-color: var(--gold); margin: 0; }
 .side-foot { display: none; }
+.reset-wrap { position: sticky; bottom: 0; z-index: 3; flex: none; margin: auto -1rem 0; padding: 1.4rem 1rem 1rem; background: linear-gradient(to top, var(--panel) 62%, transparent); }
 .reset-btn { flex: none; width: 100%; height: var(--ctl-h); border-radius: 10px; border: 1px solid var(--red); background: var(--red); color: var(--panel);
   font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; transition: filter .15s, opacity .15s; }
 .reset-btn:hover:not(:disabled) { filter: brightness(1.1); }
@@ -221,7 +222,7 @@ main { min-width: 0; padding: 1.1rem max(16px, 2vw) 0; display: flex; flex-direc
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
 }
 .art { position: relative; flex: none; height: 178px; overflow: hidden; background: var(--raise); }
-.art > img.pic { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; transition: transform .5s ease; }
+.art > img.pic { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; display: block; transition: transform .5s ease; }
 .card:hover .art > img.pic { transform: scale(1.04); }
 .art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--ec) 14%, var(--panel)) 0%, transparent 62%); pointer-events: none; }
 .card.r-legendary .art::before {
@@ -329,7 +330,7 @@ mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 3px; pa
 .dbody .card { box-shadow: none; border: 0; border-radius: 0; content-visibility: visible; contain-intrinsic-size: none; }
 .dbody .card:hover { transform: none; }
 .dbody .art { height: 360px; }
-.dbody .art > img.pic { object-position: 50% 30%; }
+.dbody .art > img.pic { object-position: 50% 0%; }
 .dbody .card:hover .art > img.pic { transform: none; }
 .gloss { display: grid; gap: .45rem; }
 .gloss div { font-size: .8rem; color: var(--muted); }
@@ -416,8 +417,9 @@ footer a { color: var(--gold); }
   .side {
     position: fixed; z-index: 70; top: 0; left: 0; bottom: 0; width: min(380px, 92vw); height: auto; background: var(--panel);
     transform: translateX(-105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); box-shadow: 20px 0 60px -20px rgba(0, 0, 0, .6);
-    padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 5.5rem;
+    padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 4.9rem;
   }
+  .reset-wrap { bottom: 4.5rem; }
   body.side-open .side { transform: none; }
   .side-head { display: flex; align-items: center; justify-content: space-between; }
   .side-head b { font: 800 1.2rem var(--font-display); }
@@ -441,7 +443,7 @@ footer a { color: var(--gold); }
 <body>
 <header class="topbar">
   <a class="brand" href="#" aria-label="SPAM Card Browser">
-    <img id="brandCoin" alt="">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="15" height="21" rx="3.2" transform="rotate(-10 10.5 17.5)" fill="var(--raise)" stroke="var(--line-2)" stroke-width="1.4"/><rect x="12" y="4" width="15" height="21" rx="3.2" transform="rotate(8 19.5 14.5)" fill="var(--gold)"/><path d="M19.6 10.2l1.4 3 3.2.4-2.4 2.2.7 3.2-2.9-1.7-2.9 1.7.7-3.2-2.4-2.2 3.2-.4z" fill="var(--gold-ink)"/></svg>
     <span><b>SPAM Card Browser</b><small data-i="tagline">Unofficial card pool explorer</small></span>
   </a>
   <button class="tb-btn" id="filtersBtn" aria-controls="side" aria-expanded="true">
@@ -505,10 +507,12 @@ footer a { color: var(--gold); }
       <h3 data-i="secScope">Search in</h3>
       <div class="checks" id="f-scope"></div>
     </section>
-    <button type="button" class="reset-btn" id="sideReset">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-      <span data-i="resetF">Reset filters</span>
-    </button>
+    <div class="reset-wrap">
+      <button type="button" class="reset-btn" id="sideReset">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+        <span data-i="resetF">Reset filters</span>
+      </button>
+    </div>
   </aside>
   <div class="side-foot"><button id="sideDone"></button></div>
 
@@ -555,7 +559,7 @@ footer a { color: var(--gold); }
 
 <script>
 const DATA = __DATA__;
-const IMG = 'https://www.spamgame.com/data/';
+const IMG = 'https://spamgame.com/data/'; // canonical host named in the SPAMDEX data terms
 const ASSETS = __ASSETS__;
 const I18N = {
   en: {
@@ -655,7 +659,7 @@ const elIcon = (id, cls) => pic(UI(elById[id].icon), IMG + elById[id].icon, cls 
 const gemIcon = (id, cls) => pic(UI(rarById[id].gem), IMG + rarById[id].gem, cls === undefined ? 'gem' : cls, rarName(id));
 const toxIcon = (k, cls) => { const t = toxById[k]; if (t && t.icon) return pic(UI(t.icon), IMG + t.icon, cls); const s = document.createElement('span'); s.className = 'noicon'; s.textContent = (t ? t.name[state.lang] : '?').slice(0, 1); return s; };
 const COIN = UI('img/frame/spamton.webp'), COIN_FB = IMG + 'img/frame/spamton.webp';
-$('brandCoin').src = COIN; $('brandCoin').onerror = function () { if (!this.dataset.r) { this.dataset.r = 1; this.src = COIN_FB; } };
+
 
 /* ---------- search ---------- */
 const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/œ/g, 'oe').replace(/æ/g, 'ae').toLowerCase();
@@ -761,7 +765,7 @@ function boostTags(parent, list) {
 const inSquad = c => state.squad.includes(c.number);
 function artBlock(c, big, zoom) {
   const t = T(c), art = el('div', 'art');
-  art.appendChild(pic(asset('art', c.slug) || IMG + c.art, IMG + c.art, 'pic', t.name));
+  if (c.art) art.appendChild(pic(asset('art', c.slug) || IMG + c.art, IMG + c.art, 'pic', t.name));
   art.appendChild(el('span', 'num', '#' + c.number));
   const coin = el('span', 'coin', String(c.spamton)); coin.style.backgroundImage = 'url("' + COIN + '")'; coin.title = c.spamton + ' Spamtons · ' + L().spamTip; art.appendChild(coin);
   if (c.artist) {
@@ -770,7 +774,7 @@ function artBlock(c, big, zoom) {
     else cr.appendChild(document.createTextNode(c.artist));
     art.appendChild(cr);
   }
-  if (zoom) {
+  if (zoom && c.art) {
     art.classList.add('zoomable'); art.tabIndex = 0; art.setAttribute('role', 'button'); art.setAttribute('aria-label', L().viewArt + ': ' + t.name);
     const z = el('span', 'zoomhint'); z.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>'; art.appendChild(z);
     art.addEventListener('click', e => { if (e.target.closest('a, button')) return; openLightbox(c); });
@@ -909,11 +913,12 @@ $('dPin').onclick = () => { toggleSquad(byNum[drawerNum]); openDrawer(drawerNum)
 /* ---------- artwork lightbox ---------- */
 let lbLastFocus = null;
 function openLightbox(c) {
+  if (!c.art) return;
   const t = T(c), lb = $('lightbox'), img = $('lbImg'), l = L();
   lb.style.setProperty('--ec', 'var(--c-' + c.element + ')');
   img.dataset.num = c.number; img.alt = t.name; img.src = asset('art', c.slug) || IMG + c.art;
   // the embedded art shows instantly; swap to the sharper 1024px original when it is reachable
-  if (c.art) { const hi = IMG + c.art.replace('/512/', '/1024/'), pre = new Image(); pre.onload = () => { if (!lb.hidden && img.dataset.num == c.number) img.src = hi; }; pre.src = hi; }
+  if (c.artFull) { const hi = IMG + c.artFull, pre = new Image(); pre.onload = () => { if (!lb.hidden && img.dataset.num == c.number) img.src = hi; }; pre.src = hi; }
   $('lbName').textContent = t.name;
   const cr = $('lbCredit'); cr.textContent = '';
   if (c.artist) {

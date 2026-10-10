@@ -2,3 +2,4 @@ spamdex_images/
 spamdex_fonts/
 spamdex_cards*.json
 __pycache__/
+spamdex_cards*.json.etag

@@ -2,6 +2,8 @@ import json, re
 LANGS = {'en': 'spamdex_cards.json', 'fr': 'spamdex_cards_fr.json'}
 D = {k: json.load(open(v, encoding='utf-8')) for k, v in LANGS.items()}
 en = D['en']
+for _l, _d in D.items():
+    assert _d.get('schema') == 1, 'cards.%s.json has schema %r; this build supports schema 1 (see the SPAMDEX terms)' % (_l, _d.get('schema'))
 kw = {l: {k['id']: k for k in D[l]['keywords']} for l in D}
 byid = {l: {c['id']: c for c in D[l]['cards']} for l in D}
 
@@ -95,7 +97,7 @@ for c in en['cards']:
         if s.get('icon'): toxicon.setdefault(slugk(s['name']), s['icon'])
     for x in tox: toxcount[x['k']] = toxcount.get(x['k'], 0) + 1
     cards.append(dict(tox=tox, number=c['number'], slug=c['slug'], element=c['element'], rarity=c['rarity'], spamton=c['spamton'], hp=c['hp'],
-        res=c['resistances'], art=a.get('small'), artist=art.get('name'), artistLink=art.get('link'),
+        res=c['resistances'], art=a.get('small'), artFull=a.get('file'), artist=art.get('name'), artistLink=art.get('link'),
         ab=[dict(cd=y['cooldown'], precision=y['precision'], critChance=y['critChance'], critMultiplier=y['critMultiplier'],
                  echo=y['cooldownResetChance'], uses=y['uses'], dmg=dmgels(c, y), heal=healels(y), boost=boosts(c, y)) for y in c['abilities']],
         tal=[dict(slot=y['slot'], elements=y.get('elements') or [], boost=boosts(c, y), grants=grants[i]) for i, y in enumerate(c['talents'])], t=t))
@@ -125,7 +127,12 @@ uipaths = {e['icon'] for e in en['elements']} | {r['gem'] for r in en['rarities'
 for p in uipaths:
     lp = 'spamdex_images/ui/' + p[4:]
     if os.path.exists(lp): assets['ui'][p] = webp_b64(lp, 72 if '/skills/' in p else 112, 82)
-missing_art = [c['slug'] for c in en['cards'] if c['slug'] not in assets['art']]
+# Removal requests (the terms let Ticroco or an artist ask for an image to be withdrawn): list a slug in exclude.txt
+excluded = set(open('exclude.txt', encoding='utf-8').read().split()) if os.path.exists('exclude.txt') else set()
+for c in cards:
+    if c['slug'] in excluded:
+        c['art'] = c['artFull'] = None; assets['art'].pop(c['slug'], None)
+missing_art = [c['slug'] for c in en['cards'] if c['slug'] not in assets['art'] and c['slug'] not in excluded]
 FONT_CSS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&display=swap'
 UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 def fonts_css():
@@ -144,7 +151,7 @@ def fonts_css():
 fonts = fonts_css()
 html = open('template.html', encoding='utf-8').read().replace('__DATA__', js)
 html = html.replace('/*__FONTS__*/', fonts).replace('__ASSETS__', json.dumps(assets))
-print('embedded: %d art, %d icons, %d font faces, missing art: %s' % (len(assets['art']), len(assets['ui']), fonts.count('@font-face'), missing_art))
+print('embedded: %d art, %d icons, %d font faces, missing art: %s, excluded: %s' % (len(assets['art']), len(assets['ui']), fonts.count('@font-face'), missing_art, sorted(excluded)))
 open('index.html', 'w', encoding='utf-8').write(html)
 print(len(html), 'bytes;', len(cards), 'cards;', sum(1 for c in cards if len(c['t']['fr']['keywords']) != len(c['t']['en']['keywords'])), 'keyword count mismatches')
 print(payload['elements'][1]['name'], payload['rarities'][2]['name'])
